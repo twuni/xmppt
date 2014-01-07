@@ -52,10 +52,7 @@ public class TestServer extends Thread {
 	@Override
 	public void run() {
 		try {
-			while( !isInterrupted() && server.isBound() && !server.isClosed() ) {
-				worker.attach( server.accept() );
-			}
-			worker.detach();
+			worker.attach( server.accept() );
 		} catch( IOException exception ) {
 			throw new RuntimeException( exception );
 		}
