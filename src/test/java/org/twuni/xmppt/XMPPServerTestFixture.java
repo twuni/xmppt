@@ -7,15 +7,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import org.twuni.xmppt.TestServer.Worker;
+import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
 import org.twuni.xmppt.xmpp.core.Features;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Presence;
-import org.twuni.xmppt.xmpp.iq.bind.Bind;
-import org.twuni.xmppt.xmpp.iq.session.Session;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
 import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
+import org.twuni.xmppt.xmpp.session.Session;
 import org.twuni.xmppt.xmpp.stream.Stream;
 
 public class XMPPServerTestFixture implements TestingSocket {

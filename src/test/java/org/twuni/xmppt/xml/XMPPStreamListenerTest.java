@@ -9,14 +9,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.twuni.xmppt.xml.validator.ValidatePacketSequence;
 import org.twuni.xmppt.xml.validator.XMPPPacketValidator;
-import org.twuni.xmppt.xmpp.PacketTransformerGroup;
 import org.twuni.xmppt.xmpp.XMPPStreamListener;
-import org.twuni.xmppt.xmpp.core.CorePacketTransformer;
+import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Presence;
-import org.twuni.xmppt.xmpp.iq.bind.BindPacketTransformer;
-import org.twuni.xmppt.xmpp.iq.session.SessionPacketTransformer;
-import org.twuni.xmppt.xmpp.sasl.SASLPacketTransformer;
 import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.stream.Stream;
 
@@ -48,7 +44,7 @@ public class XMPPStreamListenerTest extends Assert {
 		} );
 
 		XMLStreamReader reader = new XMLStreamReader();
-		reader.setListener( new XMPPStreamListener( validator, PacketTransformerGroup.getDefault() ) );
+		reader.setListener( new XMPPStreamListener( validator, XMPPPacketConfiguration.getDefault() ) );
 		reader.setInput( read( new String [] {
 			"<stream:stream xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\" to=\"twuni.org\">",
 			"<auth xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\" mechanism=\"PLAIN\">YWxpY2UAYWxpY2UAY2hhbmdlaXQ</auth>",

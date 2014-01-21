@@ -1,4 +1,4 @@
-package org.twuni.xmppt.xmpp.iq.session;
+package org.twuni.xmppt.xmpp.session;
 
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xmpp.PacketTransformer;

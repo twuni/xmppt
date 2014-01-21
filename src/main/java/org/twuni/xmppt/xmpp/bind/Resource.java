@@ -1,4 +1,4 @@
-package org.twuni.xmppt.xmpp.iq.bind;
+package org.twuni.xmppt.xmpp.bind;
 
 import org.twuni.xmppt.xml.XMLBuilder;
 import org.twuni.xmppt.xml.XMLElement;

@@ -1,4 +1,4 @@
-package org.twuni.xmppt.xmpp.iq.push;
+package org.twuni.xmppt.xmpp.push;
 
 import org.twuni.xmppt.xml.XMLBuilder;
 import org.twuni.xmppt.xml.XMLElement;

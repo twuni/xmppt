@@ -2,19 +2,8 @@ package org.twuni.xmppt.xmpp.core;
 
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xmpp.PacketTransformer;
-import org.twuni.xmppt.xmpp.PacketTransformerGroup;
-import org.twuni.xmppt.xmpp.capabilities.CapabilitiesFeature;
-import org.twuni.xmppt.xmpp.iq.bind.BindFeature;
-import org.twuni.xmppt.xmpp.iq.bind.BindPacketTransformer;
-import org.twuni.xmppt.xmpp.iq.session.SessionFeature;
-import org.twuni.xmppt.xmpp.iq.session.SessionPacketTransformer;
-import org.twuni.xmppt.xmpp.sasl.SASLFeature;
 
 public class CorePacketTransformer extends PacketTransformer {
-
-	public static PacketTransformer getDefault() {
-		return new CorePacketTransformer( new PacketTransformerGroup( new BindPacketTransformer(), new SessionPacketTransformer() ), new PacketTransformerGroup( new BindFeature(), new SessionFeature(), new SASLFeature(), new CapabilitiesFeature() ) );
-	}
 
 	private final PacketTransformer iqs;
 	private final PacketTransformer features;

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.twuni.xmppt.xml.XMLStreamReader;
+import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.xmlpull.v1.XmlPullParserException;
 
 public class XMPPStreamReaderThread extends Thread {
@@ -20,7 +21,7 @@ public class XMPPStreamReaderThread extends Thread {
 	@Override
 	public void run() {
 		try {
-			new XMLStreamReader( in, new XMPPStreamListener( listener, PacketTransformerGroup.getDefault() ) ).read();
+			new XMLStreamReader( in, new XMPPStreamListener( listener, XMPPPacketConfiguration.getDefault() ) ).read();
 		} catch( XmlPullParserException exception ) {
 			// No worries.
 		} catch( IOException exception ) {

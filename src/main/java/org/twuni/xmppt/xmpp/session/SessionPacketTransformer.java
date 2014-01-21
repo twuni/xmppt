@@ -1,19 +1,19 @@
-package org.twuni.xmppt.xmpp.iq.push;
+package org.twuni.xmppt.xmpp.session;
 
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xmpp.PacketTransformer;
 
-public class PushPacketTransformer extends PacketTransformer {
+public class SessionPacketTransformer extends PacketTransformer {
 
 	@Override
 	public boolean matches( XMLElement element ) {
-		return element.belongsTo( Push.NAMESPACE );
+		return element.belongsTo( Session.NAMESPACE );
 	}
 
 	@Override
 	public Object transform( XMLElement element ) {
-		if( Push.is( element ) ) {
-			return Push.from( element );
+		if( Session.is( element ) ) {
+			return Session.from( element );
 		}
 		return null;
 	}

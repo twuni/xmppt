@@ -1,22 +1,30 @@
 package org.twuni.xmppt.xmpp;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.twuni.xmppt.xml.XMLElement;
-import org.twuni.xmppt.xmpp.core.CorePacketTransformer;
-import org.twuni.xmppt.xmpp.sasl.SASLPacketTransformer;
 
 public class PacketTransformerGroup extends PacketTransformer {
-
-	public static PacketTransformer getDefault() {
-		return new PacketTransformerGroup( CorePacketTransformer.getDefault(), new SASLPacketTransformer() );
-	}
 
 	private final List<PacketTransformer> transformers;
 
 	public PacketTransformerGroup( PacketTransformer... transformers ) {
-		this.transformers = Arrays.asList( transformers );
+		this.transformers = new ArrayList<PacketTransformer>( Arrays.asList( transformers ) );
+
+	}
+
+	public void add( PacketTransformer transformer ) {
+		if( transformer != null ) {
+			transformers.add( transformer );
+		}
+	}
+
+	public void remove( PacketTransformer transformer ) {
+		if( transformer != null ) {
+			transformers.remove( transformer );
+		}
 	}
 
 	@Override
