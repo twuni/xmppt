@@ -1,0 +1,69 @@
+package org.twuni.xmppt.xml;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+public class XMLElement extends XMLEntity {
+
+	public static final String ATTRIBUTE_NAMESPACE = "xmlns";
+
+	public final String name;
+	public final Map<String, String> attributes;
+	public final Collection<XMLEntity> children;
+
+	public XMLElement( String name ) {
+		this( name, null );
+	}
+
+	public XMLElement( String name, Map<String, String> attributes ) {
+		this( name, attributes, null );
+	}
+
+	public XMLElement( String name, Map<String, String> attributes, Collection<XMLEntity> children ) {
+		this( null, name, attributes, children );
+	}
+
+	public XMLElement( XMLElement parent, String name, Map<String, String> attributes ) {
+		this( parent, name, attributes, null );
+	}
+
+	public XMLElement( XMLElement parent, String name, Map<String, String> attributes, Collection<XMLEntity> children ) {
+		super( parent );
+		this.name = name;
+		this.attributes = attributes != null ? attributes : new HashMap<String, String>();
+		this.children = children != null ? children : new ArrayList<XMLEntity>();
+	}
+
+	public String attribute( String attributeName ) {
+		return attributes.get( attributeName );
+	}
+
+	public String content() {
+		StringBuilder content = new StringBuilder();
+		for( XMLEntity child : children ) {
+			content.append( child );
+		}
+		return content.toString();
+	}
+
+	public String getNamespace() {
+		return attribute( ATTRIBUTE_NAMESPACE );
+	}
+
+	public boolean belongsTo( String namespace ) {
+		return namespace != null && namespace.equals( getNamespace() );
+	}
+
+	@Override
+	public String toString() {
+		XMLBuilder xml = new XMLBuilder( name );
+		for( String attribute : attributes.keySet() ) {
+			xml.attribute( attribute, attributes.get( attribute ) );
+		}
+		xml.content( children.toArray() );
+		return xml.toString();
+	}
+
+}

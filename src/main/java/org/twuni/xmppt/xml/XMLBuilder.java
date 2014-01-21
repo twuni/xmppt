@@ -7,7 +7,6 @@ public class XMLBuilder {
 	private final StringBuilder xml = new StringBuilder();
 	private String prefix;
 	private String elementName;
-	public static final String ATTRIBUTE_NAMESPACE = "xmlns";
 
 	public XMLBuilder( String elementName ) {
 		reset( elementName );
@@ -15,6 +14,10 @@ public class XMLBuilder {
 
 	public XMLBuilder( String prefix, String elementName ) {
 		reset( prefix, elementName );
+	}
+
+	public XMLBuilder attribute( String key, Object value ) {
+		return attribute( key, value != null ? String.valueOf( value ) : null );
 	}
 
 	public XMLBuilder attribute( String key, String value ) {

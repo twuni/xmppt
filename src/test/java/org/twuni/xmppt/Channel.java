@@ -16,7 +16,11 @@ public class Channel {
 	}
 
 	public int read() throws IOException {
-		return in.read( buffer );
+		return read( buffer, 0, buffer.length );
+	}
+
+	public int read( byte [] buffer, int offset, int length ) throws IOException {
+		return in.read( buffer, offset, length );
 	}
 
 	public void write( Object in ) throws IOException {

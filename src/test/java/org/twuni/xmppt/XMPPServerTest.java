@@ -11,7 +11,7 @@ public class XMPPServerTest {
 	protected XMPPServerTestFixture server;
 
 	@Test
-	public void establishConnectionViaLoopback() throws IOException {
+	public void establishConnectionViaLoopback() throws IOException, InterruptedException {
 		server.test( client );
 	}
 

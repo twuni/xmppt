@@ -1,4 +1,8 @@
-package org.twuni.xmppt.xml;
+package org.twuni.xmppt.xmpp.iq.push;
+
+import org.twuni.xmppt.xml.XMLBuilder;
+import org.twuni.xmppt.xml.XMLElement;
+import org.twuni.xmppt.xml.XMLEntity;
 
 public class Push {
 
@@ -7,6 +11,14 @@ public class Push {
 		public static final String ATTRIBUTE_APPLICATION_ID = "app_id";
 		public static final String ATTRIBUTE_TOKEN = "token";
 		public static final String ELEMENT_NAME = "identity";
+
+		public static boolean is( XMLElement element ) {
+			return ELEMENT_NAME.equals( element.name );
+		}
+
+		public static Identity from( XMLElement element ) {
+			return new Identity( element.attributes.get( ATTRIBUTE_APPLICATION_ID ), element.attributes.get( ATTRIBUTE_TOKEN ) );
+		}
 
 		private final String applicationID;
 		private final String token;
@@ -36,6 +48,23 @@ public class Push {
 	public static final String NAMESPACE = "http://silentcircle.com/protocol/push/gcm";
 	public static final String ELEMENT_NAME = "push";
 
+	public static boolean is( XMLElement element ) {
+		return ELEMENT_NAME.equals( element.name );
+	}
+
+	public static Push from( XMLElement element ) {
+		String action = element.attribute( ATTRIBUTE_ACTION );
+		for( XMLEntity entity : element.children ) {
+			if( entity instanceof XMLElement ) {
+				XMLElement child = (XMLElement) entity;
+				if( Identity.is( child ) ) {
+					return new Push( action, Identity.from( child ) );
+				}
+			}
+		}
+		return new Push( action, element.content() );
+	}
+
 	public static Push register() {
 		return new Push( ACTION_REGISTER );
 	}
@@ -45,13 +74,13 @@ public class Push {
 	}
 
 	private final String action;
-	private final Object content;
+	private final Object [] content;
 
 	public Push( String action ) {
-		this( action, null );
+		this( action, (Object []) null );
 	}
 
-	public Push( String action, Object content ) {
+	public Push( String action, Object... content ) {
 		this.action = action;
 		this.content = content;
 	}
@@ -59,7 +88,7 @@ public class Push {
 	@Override
 	public String toString() {
 		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );
-		xml.attribute( XMLBuilder.ATTRIBUTE_NAMESPACE, NAMESPACE );
+		xml.attribute( XMLElement.ATTRIBUTE_NAMESPACE, NAMESPACE );
 		xml.attribute( ATTRIBUTE_ACTION, action );
 		return xml.content( content );
 	}

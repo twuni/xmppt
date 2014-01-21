@@ -7,17 +7,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import org.twuni.xmppt.TestServer.Worker;
-import org.twuni.xmppt.xml.Bind;
-import org.twuni.xmppt.xml.CapabilitiesHash;
-import org.twuni.xmppt.xml.Features;
-import org.twuni.xmppt.xml.IQ;
-import org.twuni.xmppt.xml.Presence;
-import org.twuni.xmppt.xml.SASLAuthentication;
-import org.twuni.xmppt.xml.SASLMechanisms;
-import org.twuni.xmppt.xml.SASLPlainAuthentication;
-import org.twuni.xmppt.xml.Success;
-import org.twuni.xmppt.xml.XMPPSession;
-import org.twuni.xmppt.xml.XMPPStream;
+import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
+import org.twuni.xmppt.xmpp.core.Features;
+import org.twuni.xmppt.xmpp.core.IQ;
+import org.twuni.xmppt.xmpp.core.Presence;
+import org.twuni.xmppt.xmpp.iq.bind.Bind;
+import org.twuni.xmppt.xmpp.iq.session.Session;
+import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
+import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
+import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
+import org.twuni.xmppt.xmpp.stream.Stream;
 
 public class XMPPServerTestFixture implements TestingSocket {
 
@@ -45,26 +44,26 @@ public class XMPPServerTestFixture implements TestingSocket {
 
 		String jid = getJID();
 		CapabilitiesHash capabilities = new CapabilitiesHash( String.format( "https://%s/%s", serviceName, resource ), CapabilitiesHash.HASH_SHA1, "InwBitZINWvBDup88dDxf1C9HlY" );
-		XMPPStream outerStream = new XMPPStream( null, serviceName, "outer-stream" );
+		Stream outerStream = new Stream( null, serviceName, "outer-stream" );
 
 		channel.read();
 		channel.write( outerStream );
 		channel.write( new Features( new SASLMechanisms( SASLPlainAuthentication.MECHANISM ), capabilities ) );
 
 		channel.read();
-		channel.write( new Success( SASLAuthentication.NAMESPACE ) );
+		channel.write( new SASLSuccess() );
 
-		XMPPStream innerStream = new XMPPStream( null, serviceName, "inner-stream" );
+		Stream innerStream = new Stream( null, serviceName, "inner-stream" );
 
 		channel.read();
 		channel.write( innerStream );
-		channel.write( new Features( new Bind(), new XMPPSession(), capabilities ) );
+		channel.write( new Features( new Bind(), new Session(), capabilities ) );
 
 		channel.read();
 		channel.write( IQ.result( "1000-1", Bind.jid( jid ) ) );
 
 		channel.read();
-		channel.write( IQ.result( "1000-2", new XMPPSession() ) );
+		channel.write( IQ.result( "1000-2", new Session() ) );
 
 		channel.read();
 		channel.write( new Presence( "1000-3", jid, jid ) );
@@ -86,7 +85,7 @@ public class XMPPServerTestFixture implements TestingSocket {
 		test( socket.getInputStream(), socket.getOutputStream() );
 	}
 
-	public void test( TestingSocket client ) throws IOException {
+	public void test( TestingSocket client ) throws IOException, InterruptedException {
 
 		ServerSocket server = new ServerSocket( 0 );
 
@@ -101,6 +100,7 @@ public class XMPPServerTestFixture implements TestingSocket {
 
 		xmpp.start();
 		client.test( new Socket( server.getInetAddress(), server.getLocalPort() ) );
+		Thread.sleep( 1000 );
 		xmpp.interrupt();
 		server.close();
 

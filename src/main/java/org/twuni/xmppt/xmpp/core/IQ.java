@@ -1,4 +1,9 @@
-package org.twuni.xmppt.xml;
+package org.twuni.xmppt.xmpp.core;
+
+import org.twuni.xmppt.xml.XMLBuilder;
+import org.twuni.xmppt.xml.XMLElement;
+import org.twuni.xmppt.xml.XMLEntity;
+import org.twuni.xmppt.xmpp.PacketTransformer;
 
 public class IQ {
 
@@ -9,6 +14,35 @@ public class IQ {
 	public static final String TYPE_SET = "set";
 	public static final String TYPE_RESULT = "result";
 	public static final String ELEMENT_NAME = "iq";
+
+	public static boolean is( XMLElement element ) {
+		return ELEMENT_NAME.equals( element.name );
+	}
+
+	public static IQ from( XMLElement element, PacketTransformer packetTransformer ) {
+
+		String id = element.attribute( ATTRIBUTE_ID );
+		String type = element.attribute( ATTRIBUTE_TYPE );
+		String from = element.attribute( ATTRIBUTE_FROM );
+		String to = element.attribute( ATTRIBUTE_TO );
+
+		if( packetTransformer != null ) {
+			for( XMLEntity entity : element.children ) {
+				if( entity instanceof XMLElement ) {
+					XMLElement child = (XMLElement) entity;
+					if( packetTransformer.matches( child ) ) {
+						Object packet = packetTransformer.transform( child );
+						if( packet != null ) {
+							return new IQ( id, type, from, to, packet );
+						}
+					}
+				}
+			}
+		}
+
+		return new IQ( id, type, from, to, element.content() );
+
+	}
 
 	public static IQ result( String id, Object content ) {
 		return new IQ( id, TYPE_RESULT, null, null, content );
@@ -38,6 +72,10 @@ public class IQ {
 		this.from = from;
 		this.to = to;
 		this.content = content;
+	}
+
+	public Object getContent() {
+		return content;
 	}
 
 	@Override

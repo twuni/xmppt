@@ -1,4 +1,7 @@
-package org.twuni.xmppt.xml;
+package org.twuni.xmppt.xmpp.capabilities;
+
+import org.twuni.xmppt.xml.XMLBuilder;
+import org.twuni.xmppt.xml.XMLElement;
 
 public class CapabilitiesHash {
 
@@ -8,6 +11,14 @@ public class CapabilitiesHash {
 	public static final String ATTRIBUTE_NODE = "node";
 	public static final String ATTRIBUTE_HASH = "ver";
 	public static final String HASH_SHA1 = "sha-1";
+
+	public static boolean is( XMLElement element ) {
+		return ELEMENT_NAME.equals( element.name );
+	}
+
+	public static CapabilitiesHash from( XMLElement element ) {
+		return new CapabilitiesHash( element.attribute( ATTRIBUTE_NODE ), element.attribute( ATTRIBUTE_HASH_TYPE ), element.attribute( ATTRIBUTE_HASH ) );
+	}
 
 	private final String hashType;
 	private final String node;
@@ -24,7 +35,7 @@ public class CapabilitiesHash {
 
 		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );
 
-		xml.attribute( XMLBuilder.ATTRIBUTE_NAMESPACE, NAMESPACE );
+		xml.attribute( XMLElement.ATTRIBUTE_NAMESPACE, NAMESPACE );
 		xml.attribute( ATTRIBUTE_NODE, node );
 		xml.attribute( ATTRIBUTE_HASH_TYPE, hashType );
 		xml.attribute( ATTRIBUTE_HASH, hash );
