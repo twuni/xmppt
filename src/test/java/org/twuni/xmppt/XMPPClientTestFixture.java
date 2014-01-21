@@ -13,6 +13,7 @@ import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.core.Features;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Presence;
+import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
 import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
@@ -54,7 +55,7 @@ public class XMPPClientTestFixture implements TestingSocket {
 
 		};
 
-		new XMPPStreamReaderThread( in, new PacketListener() {
+		new XMPPStreamReaderThread( in, XMPPPacketConfiguration.getDefault(), new PacketListener() {
 
 			@Override
 			public void onPacketReceived( Object packet ) {
