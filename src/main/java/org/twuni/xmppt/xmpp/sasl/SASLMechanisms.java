@@ -43,6 +43,21 @@ public class SASLMechanisms {
 		}
 	}
 
+	public boolean hasMechanism( String mechanism ) {
+		if( mechanism != null ) {
+			for( int i = 0, count = mechanisms.length; i < count; i++ ) {
+				Object object = mechanisms[i];
+				if( object instanceof SASLMechanism ) {
+					SASLMechanism m = (SASLMechanism) object;
+					if( mechanism.equals( m.getMechanism() ) ) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public String toString() {
 		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );

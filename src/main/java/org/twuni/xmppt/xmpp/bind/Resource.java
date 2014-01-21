@@ -22,6 +22,10 @@ public class Resource {
 		this.resource = resource;
 	}
 
+	public String getValue() {
+		return resource;
+	}
+
 	@Override
 	public String toString() {
 		return new XMLBuilder( ELEMENT_NAME ).content( XMLUtils.encodeAttribute( resource ) );

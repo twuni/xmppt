@@ -100,7 +100,6 @@ public class XMPPServerTestFixture implements TestingSocket {
 
 		xmpp.start();
 		client.test( new Socket( server.getInetAddress(), server.getLocalPort() ) );
-		Thread.sleep( 1000 );
 		xmpp.interrupt();
 		server.close();
 

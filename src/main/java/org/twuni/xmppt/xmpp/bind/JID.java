@@ -22,6 +22,10 @@ public class JID {
 		this.jid = jid;
 	}
 
+	public String getValue() {
+		return jid;
+	}
+
 	@Override
 	public String toString() {
 		return new XMLBuilder( ELEMENT_NAME ).content( XMLUtils.encodeAttribute( jid ) );

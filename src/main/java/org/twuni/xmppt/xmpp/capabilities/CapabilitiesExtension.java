@@ -1,9 +1,10 @@
 package org.twuni.xmppt.xmpp.capabilities;
 
+import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xmpp.Extension;
 import org.twuni.xmppt.xmpp.PacketTransformer;
 
-public class CapabilitiesExtension implements Extension {
+public class CapabilitiesExtension extends PacketTransformer implements Extension {
 
 	@Override
 	public PacketTransformer packet() {
@@ -17,7 +18,20 @@ public class CapabilitiesExtension implements Extension {
 
 	@Override
 	public PacketTransformer feature() {
-		return new CapabilitiesFeature();
+		return this;
+	}
+
+	@Override
+	public boolean matches( XMLElement element ) {
+		return element.belongsTo( CapabilitiesHash.NAMESPACE );
+	}
+
+	@Override
+	public Object transform( XMLElement element ) {
+		if( CapabilitiesHash.is( element ) ) {
+			return CapabilitiesHash.from( element );
+		}
+		return null;
 	}
 
 }

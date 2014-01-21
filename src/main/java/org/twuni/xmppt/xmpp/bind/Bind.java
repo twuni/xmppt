@@ -46,6 +46,20 @@ public class Bind {
 		this.content = content;
 	}
 
+	public String jid() {
+		if( content instanceof JID ) {
+			return ( (JID) content ).getValue();
+		}
+		return null;
+	}
+
+	public String resource() {
+		if( content instanceof Resource ) {
+			return ( (Resource) content ).getValue();
+		}
+		return null;
+	}
+
 	@Override
 	public String toString() {
 		return new XMLBuilder( ELEMENT_NAME ).attribute( XMLElement.ATTRIBUTE_NAMESPACE, NAMESPACE ).content( content );

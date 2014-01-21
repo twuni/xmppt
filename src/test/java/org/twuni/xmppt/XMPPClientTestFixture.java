@@ -4,21 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.UUID;
 
-import org.twuni.xmppt.xmpp.PacketListener;
-import org.twuni.xmppt.xmpp.XMPPStreamReaderThread;
-import org.twuni.xmppt.xmpp.XMPPStreamWriter;
-import org.twuni.xmppt.xmpp.bind.Bind;
-import org.twuni.xmppt.xmpp.core.Features;
-import org.twuni.xmppt.xmpp.core.IQ;
-import org.twuni.xmppt.xmpp.core.Presence;
-import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
-import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
-import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
-import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
-import org.twuni.xmppt.xmpp.session.Session;
-import org.twuni.xmppt.xmpp.stream.Stream;
+import org.twuni.xmppt.xmpp.XMPPClient;
 
 public class XMPPClientTestFixture implements TestingSocket {
 
@@ -45,84 +32,29 @@ public class XMPPClientTestFixture implements TestingSocket {
 
 	public void test( InputStream in, OutputStream out ) throws IOException {
 
-		final XMPPStreamWriter writer = new XMPPStreamWriter( out ) {
+		XMPPClient xmpp = new XMPPClient( in, out, serviceName, username, password, resource ) {
 
 			@Override
-			public void write( Object packet ) throws IOException {
+			public void send( Object packet ) {
 				System.out.println( String.format( "SEND %s", packet ) );
-				super.write( packet );
+				super.send( packet );
+			}
+
+			@Override
+			public void onPacketReceived( Object packet ) {
+				System.out.println( String.format( "RECV %s", packet ) );
+				super.onPacketReceived( packet );
 			}
 
 		};
 
-		new XMPPStreamReaderThread( in, XMPPPacketConfiguration.getDefault(), new PacketListener() {
+		try {
+			Thread.sleep( 1000 );
+		} catch( InterruptedException exception ) {
+			// Ignore.
+		}
 
-			@Override
-			public void onPacketReceived( Object packet ) {
-
-				System.out.println( String.format( "RECV %s", packet ) );
-
-				if( packet instanceof Features ) {
-					onFeatures( (Features) packet );
-				}
-
-				if( packet instanceof SASLSuccess ) {
-					onSASLSuccess( (SASLSuccess) packet );
-				}
-
-				if( packet instanceof IQ ) {
-					onIQ( (IQ) packet );
-				}
-
-				if( packet instanceof Presence ) {
-					onPresence( (Presence) packet );
-				}
-
-			}
-
-			private void write( Object object ) {
-				try {
-					writer.write( object );
-				} catch( IOException ignore ) {
-					// Ignore.
-				}
-			}
-
-			private void onPresence( Presence presence ) {
-				write( new Presence( UUID.randomUUID().toString(), Presence.Type.UNAVAILABLE ) );
-				write( new Stream().close() );
-			}
-
-			private void onIQ( IQ iq ) {
-				Object content = iq.getContent();
-				if( content instanceof Bind ) {
-					write( new Presence( UUID.randomUUID().toString() ) );
-				}
-			}
-
-			private void onSASLSuccess( SASLSuccess success ) {
-				write( new Stream( serviceName ) );
-			}
-
-			private void onFeatures( Features features ) {
-
-				if( features.hasFeature( SASLMechanisms.class ) ) {
-					write( new SASLPlainAuthentication( username, password ) );
-				}
-
-				if( features.hasFeature( Bind.class ) ) {
-					write( IQ.set( UUID.randomUUID().toString(), Bind.resource( resource ) ) );
-				}
-
-				if( features.hasFeature( Session.class ) ) {
-					write( IQ.set( UUID.randomUUID().toString(), new Session() ) );
-				}
-
-			}
-
-		} ).start();
-
-		writer.write( new Stream( serviceName ) );
+		xmpp.quit();
 
 	}
 
