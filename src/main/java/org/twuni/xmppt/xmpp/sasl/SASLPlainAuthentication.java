@@ -3,7 +3,7 @@ package org.twuni.xmppt.xmpp.sasl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.apache.commons.codec.binary.Base64;
+import org.twuni.xmppt.util.Base64;
 import org.twuni.xmppt.xml.XMLElement;
 
 public class SASLPlainAuthentication extends SASLAuthentication {
@@ -84,7 +84,9 @@ public class SASLPlainAuthentication extends SASLAuthentication {
 			// Impossible.
 		}
 
-		content = Base64.encodeBase64URLSafeString( out.toByteArray() );
+		String base64content = Base64.encodeBase64URLSafeString( out.toByteArray() );
+		int modulus = base64content.length() % 4;
+		content = modulus != 0 ? base64content.concat( modulus == 2 ? "==" : "=" ) : base64content;
 
 	}
 

@@ -35,7 +35,7 @@ public class XMPPClientTestFixture implements TestingSocket {
 		XMPPClient xmpp = new XMPPClient( in, out, serviceName, username, password, resource ) {
 
 			@Override
-			public void send( Object packet ) {
+			public void send( Object packet ) throws IOException {
 				System.out.println( String.format( "SEND %s", packet ) );
 				super.send( packet );
 			}

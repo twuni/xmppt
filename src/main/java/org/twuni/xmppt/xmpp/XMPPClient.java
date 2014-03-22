@@ -65,32 +65,40 @@ public class XMPPClient implements PacketListener {
 		this.password = password;
 		this.resource = resource;
 		new XMPPStreamReaderThread( in, packetTransformer, this ).start();
-		writer.write( new Stream( serviceName ) );
+		send( new Stream( serviceName ) );
 		state.connected = true;
 	}
 
 	@Override
 	public void onPacketReceived( Object packet ) {
+		try {
+			respondTo( packet );
+		} catch( Throwable exception ) {
+			onException( exception );
+		}
+	}
+
+	private void respondTo( Object packet ) throws IOException {
 
 		if( packet instanceof Features ) {
 			onFeatures( (Features) packet );
-		}
-
-		if( packet instanceof SASLSuccess ) {
+		} else if( packet instanceof SASLSuccess ) {
 			onSASLSuccess( (SASLSuccess) packet );
-		}
-
-		if( packet instanceof IQ ) {
+		} else if( packet instanceof IQ ) {
 			onIQ( (IQ) packet );
-		}
-
-		if( packet instanceof Presence ) {
+		} else if( packet instanceof Presence ) {
 			onPresence( (Presence) packet );
+		} else {
+			throw new IOException( String.format( "Unknown packet received: [%1$s] %2$s", packet.getClass().getName(), packet ) );
 		}
 
 	}
 
-	public void quit() {
+	protected void onException( Throwable exception ) {
+		// By default, do nothing.
+	}
+
+	public void quit() throws IOException {
 		send( new Presence( id(), Presence.Type.UNAVAILABLE ) );
 		send( new Stream().close() );
 		state.reset();
@@ -100,7 +108,7 @@ public class XMPPClient implements PacketListener {
 		// Blah.
 	}
 
-	private void onIQ( IQ iq ) {
+	private void onIQ( IQ iq ) throws IOException {
 		Object content = iq.getContent();
 		if( content instanceof Bind ) {
 			state.bound = true;
@@ -109,20 +117,16 @@ public class XMPPClient implements PacketListener {
 		}
 	}
 
-	private void onSASLSuccess( SASLSuccess success ) {
+	private void onSASLSuccess( SASLSuccess success ) throws IOException {
 		state.authenticated = true;
 		send( new Stream( serviceName ) );
 	}
 
-	public void send( Object packet ) {
-		try {
-			writer.write( packet );
-		} catch( IOException ignore ) {
-			// Ignore.
-		}
+	public void send( Object packet ) throws IOException {
+		writer.write( packet );
 	}
 
-	private void onFeatures( Features features ) {
+	private void onFeatures( Features features ) throws IOException {
 
 		if( features.hasFeature( SASLMechanisms.class ) ) {
 			SASLMechanisms mechanisms = (SASLMechanisms) features.getFeature( SASLMechanisms.class );
