@@ -33,6 +33,10 @@ public class CorePacketTransformer extends PacketTransformer {
 			return Features.from( element, features );
 		}
 
+		if( Message.is( element ) ) {
+			return Message.from( element );
+		}
+
 		return null;
 
 	}

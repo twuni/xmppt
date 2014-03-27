@@ -6,14 +6,13 @@ import java.io.InputStream;
 import org.twuni.xmppt.xml.XMLStreamReader;
 import org.xmlpull.v1.XmlPullParserException;
 
-public class XMPPStreamReaderThread extends Thread {
+public class XMPPStreamReader implements Runnable {
 
 	private final InputStream in;
 	private final PacketTransformer transformer;
 	private final PacketListener listener;
 
-	public XMPPStreamReaderThread( InputStream in, PacketTransformer transformer, PacketListener listener ) {
-		super( "XMPP Reader" );
+	public XMPPStreamReader( InputStream in, PacketTransformer transformer, PacketListener listener ) {
 		this.in = in;
 		this.transformer = transformer;
 		this.listener = listener;
@@ -24,9 +23,11 @@ public class XMPPStreamReaderThread extends Thread {
 		try {
 			new XMLStreamReader( in, new XMPPStreamListener( listener, transformer ) ).read();
 		} catch( XmlPullParserException exception ) {
-			// No worries.
+			listener.onPacketException( exception );
 		} catch( IOException exception ) {
-			// No worries.
+			listener.onPacketException( exception );
+		} catch( XMLStreamResetException exception ) {
+			// We're done.
 		}
 	}
 

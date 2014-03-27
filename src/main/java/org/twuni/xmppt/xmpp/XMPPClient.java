@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.core.Features;
 import org.twuni.xmppt.xmpp.core.IQ;
+import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
@@ -45,6 +48,12 @@ public class XMPPClient implements PacketListener {
 	private final String password;
 	private final String resource;
 	private final State state = new State();
+	private InputStream input;
+	private OutputStream output;
+	private PacketTransformer packetTransformer;
+	private final List<PacketListener> packetListeners = new ArrayList<PacketListener>();
+	private Thread reader;
+	private int openStreams = 0;
 
 	public XMPPClient( Socket socket, String serviceName, String username, String password, String resource ) throws IOException {
 		this( socket.getInputStream(), socket.getOutputStream(), XMPPPacketConfiguration.getDefault(), serviceName, username, password, resource );
@@ -59,22 +68,51 @@ public class XMPPClient implements PacketListener {
 	}
 
 	public XMPPClient( InputStream in, OutputStream out, PacketTransformer packetTransformer, String serviceName, String username, String password, String resource ) throws IOException {
+		this.input = in;
+		this.output = out;
+		this.packetTransformer = packetTransformer;
 		this.writer = new XMPPStreamWriter( out );
 		this.serviceName = serviceName;
 		this.username = username;
 		this.password = password;
 		this.resource = resource;
-		new XMPPStreamReaderThread( in, packetTransformer, this ).start();
-		send( new Stream( serviceName ) );
+		newStream();
 		state.connected = true;
+	}
+
+	public void addPacketListener( PacketListener packetListener ) {
+		packetListeners.add( packetListener );
+	}
+
+	public void removePacketListener( PacketListener packetListener ) {
+		packetListeners.remove( packetListener );
+	}
+
+	public void clearPacketListeners() {
+		packetListeners.clear();
+	}
+
+	private void newStream() throws IOException {
+		Thread oldReader = reader;
+		reader = new Thread( new XMPPStreamReader( input, packetTransformer, this ), "XMPP Reader" );
+		reader.start();
+		send( new Stream( serviceName ) );
+		openStreams++;
+		if( oldReader != null ) {
+			oldReader.interrupt();
+			throw new XMLStreamResetException();
+		}
 	}
 
 	@Override
 	public void onPacketReceived( Object packet ) {
 		try {
 			respondTo( packet );
-		} catch( Throwable exception ) {
-			onException( exception );
+		} catch( IOException exception ) {
+			onPacketException( exception );
+		}
+		for( PacketListener packetListener : packetListeners ) {
+			packetListener.onPacketReceived( packet );
 		}
 	}
 
@@ -88,6 +126,10 @@ public class XMPPClient implements PacketListener {
 			onIQ( (IQ) packet );
 		} else if( packet instanceof Presence ) {
 			onPresence( (Presence) packet );
+		} else if( packet instanceof Stream ) {
+			onStream( (Stream) packet );
+		} else if( packet instanceof Message ) {
+			onMessage( (Message) packet );
 		} else {
 			throw new IOException( String.format( "Unknown packet received: [%1$s] %2$s", packet.getClass().getName(), packet ) );
 		}
@@ -100,15 +142,30 @@ public class XMPPClient implements PacketListener {
 
 	public void quit() throws IOException {
 		send( new Presence( id(), Presence.Type.UNAVAILABLE ) );
-		send( new Stream().close() );
+		while( openStreams > 0 ) {
+			send( new Stream().close() );
+			openStreams--;
+		}
 		state.reset();
+		if( reader != null ) {
+			reader.interrupt();
+			reader = null;
+		}
 	}
 
-	private void onPresence( Presence presence ) {
+	protected void onPresence( Presence presence ) {
 		// Blah.
 	}
 
-	private void onIQ( IQ iq ) throws IOException {
+	protected void onStream( Stream stream ) {
+		// Blah.
+	}
+
+	protected void onMessage( Message message ) {
+		// Blah.
+	}
+
+	protected void onIQ( IQ iq ) throws IOException {
 		Object content = iq.getContent();
 		if( content instanceof Bind ) {
 			state.bound = true;
@@ -117,16 +174,19 @@ public class XMPPClient implements PacketListener {
 		}
 	}
 
-	private void onSASLSuccess( SASLSuccess success ) throws IOException {
+	protected void onSASLSuccess( SASLSuccess success ) throws IOException {
 		state.authenticated = true;
-		send( new Stream( serviceName ) );
+		newStream();
 	}
 
 	public void send( Object packet ) throws IOException {
 		writer.write( packet );
+		for( PacketListener packetListener : packetListeners ) {
+			packetListener.onPacketSent( packet );
+		}
 	}
 
-	private void onFeatures( Features features ) throws IOException {
+	protected void onFeatures( Features features ) throws IOException {
 
 		if( features.hasFeature( SASLMechanisms.class ) ) {
 			SASLMechanisms mechanisms = (SASLMechanisms) features.getFeature( SASLMechanisms.class );
@@ -145,8 +205,21 @@ public class XMPPClient implements PacketListener {
 
 	}
 
-	private static String id() {
+	protected static String id() {
 		return UUID.randomUUID().toString();
+	}
+
+	@Override
+	public void onPacketException( Throwable exception ) {
+		for( PacketListener packetListener : packetListeners ) {
+			packetListener.onPacketException( exception );
+		}
+		onException( exception );
+	}
+
+	@Override
+	public void onPacketSent( Object packet ) {
+		// By default, do nothing.
 	}
 
 }

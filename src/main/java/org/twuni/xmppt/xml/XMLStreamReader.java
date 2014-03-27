@@ -13,12 +13,10 @@ import org.xmlpull.v1.XmlPullParserFactory;
 public class XMLStreamReader {
 
 	private XMLStreamListener listener;
+	private InputStream input;
+	private String encoding;
 	private final XmlPullParser xml;
 	private final Stack<XMLElement> trace = new Stack<XMLElement>();
-
-	public void setListener( XMLStreamListener listener ) {
-		this.listener = listener;
-	}
 
 	public XMLStreamReader( InputStream input, String encoding, XMLStreamListener listener ) throws XmlPullParserException {
 		this( input, encoding );
@@ -125,8 +123,18 @@ public class XMLStreamReader {
 		}
 	}
 
+	public void reset() throws XmlPullParserException {
+		setInput( input, encoding );
+	}
+
 	public void setInput( InputStream in, String encoding ) throws XmlPullParserException {
+		this.input = in;
+		this.encoding = encoding;
 		xml.setInput( in, encoding );
+	}
+
+	public void setListener( XMLStreamListener listener ) {
+		this.listener = listener;
 	}
 
 }

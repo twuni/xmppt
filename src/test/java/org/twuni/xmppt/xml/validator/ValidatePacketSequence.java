@@ -19,7 +19,18 @@ public class ValidatePacketSequence implements XMPPPacketValidator {
 
 	@Override
 	public boolean isValid() {
+		Assert.assertEquals( packetTypes.length, index );
 		return index == packetTypes.length;
+	}
+
+	@Override
+	public void onPacketException( Throwable exception ) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void onPacketSent( Object packet ) {
+		// TODO Auto-generated method stub
 	}
 
 }
