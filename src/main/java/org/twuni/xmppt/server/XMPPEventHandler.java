@@ -16,6 +16,7 @@ import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.twuni.xmppt.xmpp.ping.Ping;
 import org.twuni.xmppt.xmpp.sasl.SASLAuthentication;
+import org.twuni.xmppt.xmpp.sasl.SASLError;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
 import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
@@ -23,6 +24,7 @@ import org.twuni.xmppt.xmpp.session.Session;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 import org.twuni.xmppt.xmpp.stream.Stream;
+import org.twuni.xmppt.xmpp.stream.StreamError;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public class XMPPEventHandler extends EventHandler {
@@ -31,15 +33,17 @@ public class XMPPEventHandler extends EventHandler {
 	private static final XMLElementParser XML = new XMLElementParser();
 
 	private final Transporter transporter = new Transporter();
+	private final Authenticator authenticator;
 	private final String serviceName;
 
-	public XMPPEventHandler( String serviceName ) {
+	public XMPPEventHandler( String serviceName, Authenticator authenticator ) {
 		this.serviceName = serviceName;
+		this.authenticator = authenticator;
 	}
 
 	@Override
 	public void onData( Connection connection, byte [] data ) {
-		LOG.info( "RECV %d [%d bytes] %s", Integer.valueOf( connection.hashCode() ), Integer.valueOf( data.length ), new String( data, 0, data.length ) );
+		LOG.info( "RECV C/%s [%d bytes] %s", Integer.toHexString( connection.hashCode() ), Integer.valueOf( data.length ), new String( data, 0, data.length ) );
 		List<XMLElement> xml = XML.parse( data );
 		for( XMLElement element : xml ) {
 			onXMLElement( connection, element );
@@ -97,7 +101,7 @@ public class XMPPEventHandler extends EventHandler {
 		try {
 			connection.write( b, 0, b.length );
 		} catch( BufferOverflowException exception ) {
-			LOG.info( "DELAY %s", new String( b, 0, b.length ) );
+			LOG.info( "DELAY C/%s %s", Integer.toHexString( connection.hashCode() ), new String( b, 0, b.length ) );
 		}
 	}
 
@@ -162,9 +166,15 @@ public class XMPPEventHandler extends EventHandler {
 
 	private void onSASLAuthentication( Connection connection, SASLAuthentication auth ) {
 		if( auth instanceof SASLPlainAuthentication ) {
-			state( connection ).username = ( (SASLPlainAuthentication) auth ).getAuthenticationString();
+			SASLPlainAuthentication plain = (SASLPlainAuthentication) auth;
+			try {
+				authenticator.checkCredential( plain.getAuthenticationString(), plain.getPassword() );
+				state( connection ).username = plain.getAuthenticationString();
+				send( connection, new SASLSuccess() );
+			} catch( AuthenticationException exception ) {
+				send( connection, new SASLError() );
+			}
 		}
-		send( connection, new SASLSuccess() );
 	}
 
 	private boolean isAuthenticated( Connection connection ) {
@@ -173,7 +183,7 @@ public class XMPPEventHandler extends EventHandler {
 
 	private void onStream( Connection connection, Stream stream ) {
 		if( !serviceName.equals( stream.to() ) ) {
-			send( connection, new org.twuni.xmppt.xmpp.core.Error( Stream.NAMESPACE ) );
+			send( connection, new StreamError() );
 			return;
 		}
 		if( !isAuthenticated( connection ) ) {
@@ -198,10 +208,6 @@ public class XMPPEventHandler extends EventHandler {
 		if( jid != null ) {
 			transporter.flush( jid );
 		}
-	}
-
-	private static String username( Connection connection ) {
-		return state( connection ).username;
 	}
 
 	private String jidWithResource( Connection connection ) {

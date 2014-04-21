@@ -44,11 +44,11 @@ public class EventHandler {
 	}
 
 	public void onConnected( Connection connection ) {
-		LOG.info( "CONNECT %d", Integer.valueOf( connection.hashCode() ) );
+		LOG.info( "CONNECT C/%s", Integer.toHexString( connection.hashCode() ) );
 	}
 
 	public void onDisconnected( Connection connection ) {
-		LOG.info( "DISCONNECT %d", Integer.valueOf( connection.hashCode() ) );
+		LOG.info( "DISCONNECT C/%s", Integer.toHexString( connection.hashCode() ) );
 		connection.cleanup();
 	}
 

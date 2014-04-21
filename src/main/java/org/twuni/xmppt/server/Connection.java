@@ -73,7 +73,7 @@ public abstract class Connection implements Writable {
 		}
 		byte [] b = new byte [buffer.remaining()];
 		buffer.get( b, 0, b.length );
-		LOG.info( "SEND %d [%d bytes] %s", Integer.valueOf( hashCode() ), Integer.valueOf( b.length ), new String( b, 0, b.length ) );
+		LOG.info( "SEND C/%s [%d bytes] %s", Integer.toHexString( hashCode() ), Integer.valueOf( b.length ), new String( b, 0, b.length ) );
 		buffer.flip();
 		int bytesWritten = getClient().write( buffer );
 		buffer.clear();
