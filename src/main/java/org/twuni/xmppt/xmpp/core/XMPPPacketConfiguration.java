@@ -9,21 +9,33 @@ import org.twuni.xmppt.xmpp.PacketTransformer;
 import org.twuni.xmppt.xmpp.PacketTransformerGroup;
 import org.twuni.xmppt.xmpp.bind.BindExtension;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesExtension;
+import org.twuni.xmppt.xmpp.ping.PingExtension;
 import org.twuni.xmppt.xmpp.sasl.SASLExtension;
 import org.twuni.xmppt.xmpp.session.SessionExtension;
+import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public class XMPPPacketConfiguration {
 
+	private static PacketTransformer defaultConfiguration;
+
 	public static PacketTransformer getDefault() {
 
-		XMPPPacketConfiguration config = new XMPPPacketConfiguration();
+		if( defaultConfiguration == null ) {
 
-		config.add( new SASLExtension() );
-		config.add( new BindExtension() );
-		config.add( new SessionExtension() );
-		config.add( new CapabilitiesExtension() );
+			XMPPPacketConfiguration config = new XMPPPacketConfiguration();
 
-		return config.build();
+			config.add( new SASLExtension() );
+			config.add( new BindExtension() );
+			config.add( new PingExtension() );
+			config.add( new SessionExtension() );
+			config.add( new CapabilitiesExtension() );
+			config.add( new StreamManagement() );
+
+			defaultConfiguration = config.build();
+
+		}
+
+		return defaultConfiguration;
 
 	}
 

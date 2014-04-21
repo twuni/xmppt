@@ -87,7 +87,7 @@ public class XMPPServerTestFixture implements TestingSocket {
 
 	public void test( TestingSocket client ) throws IOException, InterruptedException {
 
-		ServerSocket server = new ServerSocket( 0 );
+		ServerSocket server = new ServerSocket( 5222 );
 
 		TestServer xmpp = new TestServer( server, new Worker() {
 

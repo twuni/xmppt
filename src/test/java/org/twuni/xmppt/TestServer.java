@@ -54,8 +54,12 @@ public class TestServer extends Thread {
 		try {
 			worker.attach( server.accept() );
 		} catch( IOException exception ) {
-			throw new RuntimeException( exception );
+			onException( exception );
 		}
+	}
+
+	protected void onException( Throwable exception ) {
+		// Blah.
 	}
 
 }

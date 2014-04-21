@@ -11,6 +11,7 @@ public class IQ {
 	public static final String ATTRIBUTE_TYPE = "type";
 	public static final String ATTRIBUTE_FROM = "from";
 	public static final String ATTRIBUTE_TO = "to";
+	public static final String TYPE_GET = "get";
 	public static final String TYPE_SET = "set";
 	public static final String TYPE_RESULT = "result";
 	public static final String ELEMENT_NAME = "iq";
@@ -60,6 +61,14 @@ public class IQ {
 		return new IQ( id, TYPE_SET, null, to, content );
 	}
 
+	public static IQ get( String id, String to, Object content ) {
+		return new IQ( id, TYPE_GET, null, to, content );
+	}
+
+	public static IQ get( String id, Object content ) {
+		return new IQ( id, TYPE_GET, null, null, content );
+	}
+
 	private final String id;
 	private final String type;
 	private final String from;
@@ -76,6 +85,22 @@ public class IQ {
 
 	public Object getContent() {
 		return content;
+	}
+
+	public String id() {
+		return id;
+	}
+
+	public boolean expectsResult() {
+		return type != null && !TYPE_RESULT.equals( type );
+	}
+
+	public IQ result( Object content ) {
+		return IQ.result( id, content );
+	}
+
+	public IQ result() {
+		return IQ.result( id, null );
 	}
 
 	@Override

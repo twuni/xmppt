@@ -40,6 +40,26 @@ public class Message {
 		this.content = content;
 	}
 
+	public Message from( String from ) {
+		return new Message( id, type, from, to, content );
+	}
+
+	public String to() {
+		return to;
+	}
+
+	public String from() {
+		return from;
+	}
+
+	public String id() {
+		return id;
+	}
+
+	public String type() {
+		return type;
+	}
+
 	public Object getContent() {
 		return content;
 	}

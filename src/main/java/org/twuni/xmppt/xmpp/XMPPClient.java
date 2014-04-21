@@ -14,6 +14,7 @@ import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
+import org.twuni.xmppt.xmpp.ping.Ping;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
 import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
@@ -171,6 +172,11 @@ public class XMPPClient implements PacketListener {
 			state.bound = true;
 			state.jid = ( (Bind) content ).jid();
 			send( new Presence( id() ) );
+		}
+		if( content instanceof Ping ) {
+			if( iq.expectsResult() ) {
+				send( IQ.result( iq.id(), state.jid, serviceName, null ) );
+			}
 		}
 	}
 

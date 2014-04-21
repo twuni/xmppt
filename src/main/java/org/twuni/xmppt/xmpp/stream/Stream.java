@@ -29,6 +29,18 @@ public class Stream {
 	private final String to;
 	private final String from;
 
+	public String to() {
+		return to;
+	}
+
+	public String from() {
+		return from;
+	}
+
+	public String id() {
+		return id;
+	}
+
 	public Stream() {
 		this( null );
 	}

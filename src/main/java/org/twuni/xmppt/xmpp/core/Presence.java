@@ -77,6 +77,14 @@ public class Presence {
 		this.type = type;
 	}
 
+	public String id() {
+		return id;
+	}
+
+	public Type type() {
+		return type;
+	}
+
 	@Override
 	public String toString() {
 		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );
