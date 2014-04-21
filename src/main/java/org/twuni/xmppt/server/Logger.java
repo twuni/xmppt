@@ -9,7 +9,7 @@ public class Logger {
 	}
 
 	public void info( String format, Object... args ) {
-		System.out.println( String.format( "[%s] %s", tag, String.format( format, args ) ) );
+		System.out.println( String.format( "T/%d [%s] %s", Long.valueOf( System.currentTimeMillis() ), tag, String.format( format, args ) ) );
 	}
 
 }
