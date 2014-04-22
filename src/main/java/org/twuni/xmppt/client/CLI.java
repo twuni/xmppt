@@ -1,4 +1,4 @@
-package org.twuni.nio.client;
+package org.twuni.xmppt.client;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -35,6 +35,16 @@ public class CLI implements Runnable {
 		int port = 5222;
 		boolean secure = false;
 
+		if( args.length <= 0 ) {
+			System.out.println( "" );
+			System.out.println( String.format( "Usage: java %s [-p port] [-h host] [-s]", CLI.class.getName() ) );
+			System.out.println( String.format( "    -p <port>   The remote port (default: %d)", Integer.valueOf( port ) ) );
+			System.out.println( String.format( "    -h <host>   The remote host (default: %s)", host ) );
+			System.out.println( String.format( "    -s          Use an SSL/TLS connection (default: %s)", secure ? "yes" : "no" ) );
+			System.out.println( "" );
+			return;
+		}
+
 		for( int i = 0; i < args.length; i++ ) {
 
 			if( "-p".equals( args[i] ) ) {
@@ -58,7 +68,7 @@ public class CLI implements Runnable {
 
 		Socket socket = secure ? createSecureSocket( host, port ) : new Socket( host, port );
 		new Thread( new CLI( socket ) ).start();
-		byte [] buffer = new byte[32*1024];
+		byte [] buffer = new byte [32 * 1024];
 		while( socket.isConnected() && !socket.isInputShutdown() ) {
 			int count = socket.getInputStream().read( buffer, 0, buffer.length );
 			if( count < 0 ) {
