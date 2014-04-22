@@ -1,77 +1,144 @@
 package org.twuni.xmppt;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
+import javax.net.ssl.SSLContext;
+
+import org.junit.Assert;
+import org.twuni.xmppt.xmpp.PacketListener;
 import org.twuni.xmppt.xmpp.XMPPClient;
+import org.twuni.xmppt.xmpp.core.Presence;
+import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
 
-public class XMPPClientTestFixture implements TestingSocket {
+public class XMPPClientTestFixture extends Assert implements PacketListener {
 
 	private String serviceName = "twuni.org";
 	private String username = "alice";
 	private String password = "changeit";
 	private String resource = "test";
+	private XMPPClient xmpp;
+	private Socket socket;
 
-	public void setPassword( String password ) {
-		this.password = password;
+	public void connect( String host, int port ) throws IOException {
+		try {
+			connect( host, port, false );
+		} catch( KeyManagementException impossible ) {
+			// Impossible.
+		} catch( NoSuchAlgorithmException impossible ) {
+			// Impossible.
+		}
 	}
 
-	public void setResource( String resource ) {
-		this.resource = resource;
+	public void connect( String host, int port, boolean secure ) throws IOException, KeyManagementException, NoSuchAlgorithmException {
+		this.socket = secure ? createSecureSocket( host, port ) : new Socket( host, port );
+		onConnected();
 	}
 
-	public void setServiceName( String serviceName ) {
+	public void service( String serviceName ) {
 		this.serviceName = serviceName;
 	}
 
-	public void setUsername( String username ) {
+	public void login( String username, String password ) {
 		this.username = username;
+		this.password = password;
 	}
 
-	public void test( InputStream in, OutputStream out ) throws IOException {
+	public void bind( String resource ) {
+		this.resource = resource;
+	}
 
-		XMPPClient xmpp = new XMPPClient( in, out, serviceName, username, password, resource ) {
+	public static Socket createSecureSocket( String host, int port ) throws NoSuchAlgorithmException, KeyManagementException, IOException, UnknownHostException {
 
-			@Override
-			public void send( Object packet ) throws IOException {
-				System.out.println( String.format( "SEND %s", packet ) );
-				super.send( packet );
-			}
-
-			@Override
-			public void onPacketReceived( Object packet ) {
-				System.out.println( String.format( "RECV %s", packet ) );
-				super.onPacketReceived( packet );
-			}
-
-			@Override
-			protected void onException( Throwable exception ) {
-				System.out.println( String.format( "ERROR [%s] %s", exception.getClass().getName(), exception.getLocalizedMessage() ) );
-				super.onException( exception );
-				try {
-					quit();
-				} catch( IOException ignore ) {
-					// Ignore.
-				}
-			}
-
-		};
+		SSLContext tls = SSLContext.getInstance( "TLSv1.2" );
 
 		try {
-			Thread.sleep( 10000 );
-		} catch( InterruptedException exception ) {
-			// Ignore.
+			tls.getSocketFactory();
+		} catch( IllegalStateException exception ) {
+			tls.init( null, null, new SecureRandom() );
 		}
 
-		xmpp.quit();
+		return tls.getSocketFactory().createSocket( host, port );
+
+	}
+
+	public void start() throws IOException, KeyManagementException, NoSuchAlgorithmException {
+		xmpp = new XMPPClient( socket, serviceName, username, password, resource );
+		xmpp.addPacketListener( this );
+		xmpp.waitForConnectionToDie();
+		xmpp.waitForConnectionToDie();
+	}
+
+	public void stop() {
+		try {
+			xmpp.quit();
+		} catch( IOException exception ) {
+			onPacketException( exception );
+		}
+		onDisconnected();
+	}
+
+	protected void send( Object packet ) {
+		try {
+			xmpp.send( packet );
+		} catch( IOException exception ) {
+			onPacketException( exception );
+		}
+	}
+
+	@Override
+	public void onPacketReceived( Object packet ) {
+
+		if( packet instanceof Presence ) {
+			onAvailable();
+		}
+
+		if( packet instanceof SASLSuccess ) {
+			onAuthenticated();
+		}
 
 	}
 
 	@Override
-	public void test( Socket socket ) throws IOException {
-		test( socket.getInputStream(), socket.getOutputStream() );
+	public void onPacketSent( Object packet ) {
+
+		if( packet instanceof Presence ) {
+			Presence presence = (Presence) packet;
+			if( Presence.Type.UNAVAILABLE.equals( presence.type() ) ) {
+				onUnavailable();
+			}
+		}
+
+	}
+
+	@Override
+	public void onPacketException( Throwable exception ) {
+		exception.printStackTrace();
+		fail( exception.getLocalizedMessage() );
+	}
+
+	protected void onConnected() {
+		// Blah.
+	}
+
+	protected void onAuthenticated() {
+		// Blah.
+	}
+
+	protected void onAvailable() {
+		// Blah.
+	}
+
+	protected void onUnavailable() {
+		// Blah.
+	}
+
+	protected void onDisconnected() {
+		// Blah.
 	}
 
 }

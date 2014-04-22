@@ -16,7 +16,7 @@ public class XMPPClientAsyncTest extends Assert {
 
 	private final Object guard = new Object();
 
-	@Ignore
+	@Ignore( "This is only half-baked." )
 	@Test
 	public void asyncSanityCheck() throws IOException {
 

@@ -8,6 +8,10 @@ public class StreamManagement extends PacketTransformer implements Extension {
 
 	public static final String NAMESPACE = "urn:xmpp:sm:3";
 
+	public static boolean is( Object packet ) {
+		return packet instanceof Acknowledgment || packet instanceof AcknowledgmentRequest;
+	}
+
 	public static boolean is( XMLElement element ) {
 		return NAMESPACE.equals( element.attribute( XMLElement.ATTRIBUTE_NAMESPACE ) );
 	}

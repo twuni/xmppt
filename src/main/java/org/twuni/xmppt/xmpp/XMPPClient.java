@@ -22,7 +22,9 @@ import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
 import org.twuni.xmppt.xmpp.session.Session;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
+import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 import org.twuni.xmppt.xmpp.stream.Stream;
+import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public class XMPPClient implements PacketListener {
 
@@ -53,11 +55,22 @@ public class XMPPClient implements PacketListener {
 	private final String resource;
 	private final State state = new State();
 	private InputStream input;
-	private OutputStream output;
 	private PacketTransformer packetTransformer;
 	private final List<PacketListener> packetListeners = new ArrayList<PacketListener>();
 	private Thread reader;
 	private int openStreams = 0;
+	private int packetsSent;
+	private int packetsReceived;
+
+	public void waitForConnectionToDie() {
+		if( reader != null ) {
+			try {
+				reader.join();
+			} catch( InterruptedException exception ) {
+				// We're okay with being interrupted here.
+			}
+		}
+	}
 
 	public XMPPClient( Socket socket, String serviceName, String username, String password, String resource ) throws IOException {
 		this( socket.getInputStream(), socket.getOutputStream(), XMPPPacketConfiguration.getDefault(), serviceName, username, password, resource );
@@ -73,7 +86,6 @@ public class XMPPClient implements PacketListener {
 
 	public XMPPClient( InputStream in, OutputStream out, PacketTransformer packetTransformer, String serviceName, String username, String password, String resource ) throws IOException {
 		this.input = in;
-		this.output = out;
 		this.packetTransformer = packetTransformer;
 		this.writer = new XMPPStreamWriter( out );
 		this.serviceName = serviceName;
@@ -102,6 +114,8 @@ public class XMPPClient implements PacketListener {
 		reader.start();
 		send( new Stream( serviceName ) );
 		openStreams++;
+		packetsSent = 0;
+		packetsReceived = 0;
 		if( oldReader != null ) {
 			oldReader.interrupt();
 			throw new XMLStreamResetException();
@@ -122,6 +136,10 @@ public class XMPPClient implements PacketListener {
 
 	private void respondTo( Object packet ) throws IOException {
 
+		if( available && !StreamManagement.is( packet ) ) {
+			packetsReceived++;
+		}
+
 		if( packet instanceof Features ) {
 			onFeatures( (Features) packet );
 		} else if( packet instanceof SASLSuccess ) {
@@ -138,14 +156,26 @@ public class XMPPClient implements PacketListener {
 			onMessage( (Message) packet );
 		} else if( packet instanceof Acknowledgment ) {
 			onAcknowledgment( (Acknowledgment) packet );
+		} else if( packet instanceof AcknowledgmentRequest ) {
+			onAcknowledgmentRequest( (AcknowledgmentRequest) packet );
 		} else {
 			throw new IOException( String.format( "Unknown packet received: [%1$s] %2$s", packet.getClass().getName(), packet ) );
 		}
 
 	}
 
-	protected void onAcknowledgment( Acknowledgment packet ) {
-		// By default, do nothing.
+	protected void onAcknowledgmentRequest( AcknowledgmentRequest acknowledgmentRequest ) {
+		try {
+			send( new Acknowledgment( packetsReceived ) );
+		} catch( IOException exception ) {
+			onPacketException( exception );
+		}
+	}
+
+	protected void onAcknowledgment( Acknowledgment acknowledgment ) {
+		if( acknowledgment.getH() != packetsSent ) {
+			onPacketException( new IOException( String.format( "Expected [%d], was [%d]", Integer.valueOf( packetsSent ), Integer.valueOf( acknowledgment.getH() ) ) ) );
+		}
 	}
 
 	protected void onSASLFailure( SASLFailure packet ) {
@@ -158,6 +188,7 @@ public class XMPPClient implements PacketListener {
 
 	public void quit() throws IOException {
 		send( new Presence( id(), Presence.Type.UNAVAILABLE ) );
+		available = false;
 		while( openStreams > 0 ) {
 			send( new Stream().close() );
 			openStreams--;
@@ -169,8 +200,12 @@ public class XMPPClient implements PacketListener {
 		}
 	}
 
+	private boolean available;
+
 	protected void onPresence( Presence presence ) {
-		// Blah.
+		if( !Presence.Type.UNAVAILABLE.equals( presence ) ) {
+			available = true;
+		}
 	}
 
 	protected void onStream( Stream stream ) {
@@ -202,6 +237,9 @@ public class XMPPClient implements PacketListener {
 
 	public void send( Object packet ) throws IOException {
 		writer.write( packet );
+		if( available && !StreamManagement.is( packet ) ) {
+			packetsSent++;
+		}
 		for( PacketListener packetListener : packetListeners ) {
 			packetListener.onPacketSent( packet );
 		}
