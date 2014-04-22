@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.twuni.nio.server.AuthenticationException;
 import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.core.Features;
 import org.twuni.xmppt.xmpp.core.IQ;
@@ -15,10 +16,12 @@ import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.twuni.xmppt.xmpp.ping.Ping;
+import org.twuni.xmppt.xmpp.sasl.SASLFailure;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
 import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
 import org.twuni.xmppt.xmpp.session.Session;
+import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.Stream;
 
 public class XMPPClient implements PacketListener {
@@ -123,6 +126,8 @@ public class XMPPClient implements PacketListener {
 			onFeatures( (Features) packet );
 		} else if( packet instanceof SASLSuccess ) {
 			onSASLSuccess( (SASLSuccess) packet );
+		} else if( packet instanceof SASLFailure ) {
+			onSASLFailure( (SASLFailure) packet );
 		} else if( packet instanceof IQ ) {
 			onIQ( (IQ) packet );
 		} else if( packet instanceof Presence ) {
@@ -131,10 +136,20 @@ public class XMPPClient implements PacketListener {
 			onStream( (Stream) packet );
 		} else if( packet instanceof Message ) {
 			onMessage( (Message) packet );
+		} else if( packet instanceof Acknowledgment ) {
+			onAcknowledgment( (Acknowledgment) packet );
 		} else {
 			throw new IOException( String.format( "Unknown packet received: [%1$s] %2$s", packet.getClass().getName(), packet ) );
 		}
 
+	}
+
+	protected void onAcknowledgment( Acknowledgment packet ) {
+		// By default, do nothing.
+	}
+
+	protected void onSASLFailure( SASLFailure packet ) {
+		onException( new AuthenticationException() );
 	}
 
 	protected void onException( Throwable exception ) {

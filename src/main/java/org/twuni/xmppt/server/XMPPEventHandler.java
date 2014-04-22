@@ -3,6 +3,12 @@ package org.twuni.xmppt.server;
 import java.nio.BufferOverflowException;
 import java.util.List;
 
+import org.twuni.nio.server.AuthenticationException;
+import org.twuni.nio.server.Authenticator;
+import org.twuni.nio.server.Connection;
+import org.twuni.nio.server.EventHandler;
+import org.twuni.nio.server.Logger;
+import org.twuni.nio.server.Transporter;
 import org.twuni.xmppt.server.XMPPConnection.State;
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xml.XMLElementParser;
@@ -16,7 +22,7 @@ import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.twuni.xmppt.xmpp.ping.Ping;
 import org.twuni.xmppt.xmpp.sasl.SASLAuthentication;
-import org.twuni.xmppt.xmpp.sasl.SASLError;
+import org.twuni.xmppt.xmpp.sasl.SASLFailure;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
 import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
@@ -172,7 +178,7 @@ public class XMPPEventHandler extends EventHandler {
 				state( connection ).username = plain.getAuthenticationString();
 				send( connection, new SASLSuccess() );
 			} catch( AuthenticationException exception ) {
-				send( connection, new SASLError() );
+				send( connection, new SASLFailure( "<not-authorized/>" ) );
 			}
 		}
 	}

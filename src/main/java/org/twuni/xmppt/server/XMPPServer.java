@@ -2,6 +2,9 @@ package org.twuni.xmppt.server;
 
 import java.io.IOException;
 
+import org.twuni.nio.server.Acceptor;
+import org.twuni.nio.server.AutomaticAuthenticator;
+
 public class XMPPServer {
 
 	private static final int DEFAULT_PORT = 5222;

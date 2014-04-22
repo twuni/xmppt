@@ -1,4 +1,4 @@
-package org.twuni.xmppt.server;
+package org.twuni.nio.server;
 
 import java.util.HashMap;
 import java.util.Map;

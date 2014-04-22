@@ -46,10 +46,21 @@ public class XMPPClientTestFixture implements TestingSocket {
 				super.onPacketReceived( packet );
 			}
 
+			@Override
+			protected void onException( Throwable exception ) {
+				System.out.println( String.format( "ERROR [%s] %s", exception.getClass().getName(), exception.getLocalizedMessage() ) );
+				super.onException( exception );
+				try {
+					quit();
+				} catch( IOException ignore ) {
+					// Ignore.
+				}
+			}
+
 		};
 
 		try {
-			Thread.sleep( 1000 );
+			Thread.sleep( 10000 );
 		} catch( InterruptedException exception ) {
 			// Ignore.
 		}

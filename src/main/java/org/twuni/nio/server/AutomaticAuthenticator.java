@@ -1,4 +1,4 @@
-package org.twuni.xmppt.server;
+package org.twuni.nio.server;
 
 public class AutomaticAuthenticator extends SimpleAuthenticator {
 	

@@ -2,6 +2,10 @@ package org.twuni.xmppt.server;
 
 import java.nio.channels.SocketChannel;
 
+import org.twuni.nio.server.Connection;
+import org.twuni.nio.server.Dispatcher;
+import org.twuni.nio.server.EventHandler;
+
 public class XMPPConnection extends Connection {
 
 	public XMPPConnection( SocketChannel client, Dispatcher dispatcher, EventHandler eventHandler, int inputBufferSize, int outputBufferSize ) {

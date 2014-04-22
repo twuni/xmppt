@@ -11,6 +11,9 @@ public class Message {
 	public static final String ATTRIBUTE_TO = "to";
 	public static final String ELEMENT_NAME = "message";
 
+	public static final String TYPE_CHAT = "chat";
+	public static final String TYPE_ERROR = "error";
+
 	public static boolean is( XMLElement element ) {
 		return ELEMENT_NAME.equals( element.name );
 	}

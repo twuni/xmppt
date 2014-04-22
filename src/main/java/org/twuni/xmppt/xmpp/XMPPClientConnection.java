@@ -123,10 +123,10 @@ public class XMPPClientConnection implements PacketListener, Runnable {
 		}
 		if( !isAuthenticated() ) {
 			send( new Stream( null, serviceName, "1234567890", "stream", "1.0" ) );
-			send( new Features( "stream", new SASLMechanisms( "PLAIN" ), new CapabilitiesHash( "http://silentcircle.com/test", CapabilitiesHash.HASH_SHA1, "InwBitZINWvBDup88dDxf1C9HlY" ) ) );
+			send( new Features( "stream", new SASLMechanisms( "PLAIN" ) ) );
 		} else {
 			send( new Stream( null, serviceName, "9876543210", "stream", "1.0" ) );
-			send( new Features( "stream", new Bind(), new Session(), new CapabilitiesHash( "http://silentcircle.com/test", CapabilitiesHash.HASH_SHA1, "InwBitZINWvBDup88dDxf1C9HlY" ) ) );
+			send( new Features( "stream", new Bind(), new Session() ) );
 		}
 	}
 

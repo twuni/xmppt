@@ -17,6 +17,10 @@ public class SASLPacketTransformer extends PacketTransformer {
 			return SASLSuccess.from( element );
 		}
 
+		if( SASLFailure.is( element ) ) {
+			return SASLFailure.from( element );
+		}
+
 		if( SASLPlainAuthentication.is( element ) ) {
 			return SASLPlainAuthentication.from( element );
 		}

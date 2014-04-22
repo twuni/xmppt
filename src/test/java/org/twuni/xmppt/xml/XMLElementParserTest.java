@@ -74,7 +74,7 @@ public class XMLElementParserTest extends Assert {
 
 	@Test
 	public void parse_xmppStream() {
-		List<XMLElement> entities = new XMLElementParser().parse( "<stream:stream xmlns:stream=\"http://etherx.jabber.org/streams\" to=\"silentcircle.com\" xmlns=\"jabber:client\" version=\"1.0\"/>" );
+		List<XMLElement> entities = new XMLElementParser().parse( "<stream:stream xmlns:stream=\"http://etherx.jabber.org/streams\" to=\"example.com\" xmlns=\"jabber:client\" version=\"1.0\"/>" );
 		assertEquals( 1, entities.size() );
 		System.out.println( entities );
 	}
