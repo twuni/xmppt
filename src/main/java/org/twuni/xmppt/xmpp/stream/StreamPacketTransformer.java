@@ -33,7 +33,7 @@ public class StreamPacketTransformer extends PacketTransformer {
 			return Features.from( element, features );
 		}
 
-		return null;
+		return element;
 
 	}
 

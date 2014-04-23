@@ -33,8 +33,13 @@ public class PingExtension extends PacketTransformer implements Extension {
 			return Ping.from( element );
 		}
 
-		return null;
+		return element;
 
+	}
+
+	@Override
+	public PacketTransformer presence() {
+		return null;
 	}
 
 }

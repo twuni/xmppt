@@ -191,7 +191,7 @@ public class XMPPClientTestFixture extends Assert {
 		return getFullJID().replaceAll( "/.+$", "" );
 	}
 
-	private Stream getStream() {
+	protected Stream getStream() {
 		Context context = getContext();
 		return context != null ? context.stream : null;
 	}

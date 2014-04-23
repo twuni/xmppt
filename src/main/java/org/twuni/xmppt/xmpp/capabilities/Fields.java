@@ -1,0 +1,71 @@
+package org.twuni.xmppt.xmpp.capabilities;
+
+import org.twuni.xmppt.xml.XMLBuilder;
+import org.twuni.xmppt.xml.XMLElement;
+import org.twuni.xmppt.xmpp.PacketTransformer;
+
+public class Fields {
+
+	private static class ChildTransformer extends PacketTransformer {
+
+		@Override
+		public boolean matches( XMLElement element ) {
+			return true;
+		}
+
+		@Override
+		public Object transform( XMLElement element ) {
+
+			if( Field.is( element ) ) {
+				return Field.from( element );
+			}
+
+			return element;
+
+		}
+
+	}
+
+	public static final String NAMESPACE = "jabber:x:data";
+	public static final String ELEMENT_NAME = "x";
+	public static final String ATTRIBUTE_TYPE = "type";
+	public static final String TYPE_RESULT = "result";
+	private static final PacketTransformer CHILD_TRANSFORMER = new ChildTransformer();
+
+	public static boolean is( XMLElement element ) {
+		return element.belongsTo( NAMESPACE ) && ELEMENT_NAME.equals( element.name );
+	}
+
+	public static Fields from( XMLElement element ) {
+		return new Fields( element.attribute( ATTRIBUTE_TYPE ), CHILD_TRANSFORMER.transform( element.children ) );
+	}
+
+	private final String type;
+	private final Object [] content;
+
+	public Fields( String type, Object... content ) {
+		this.type = type;
+		this.content = content;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public Object [] getContent() {
+		return content;
+	}
+
+	@Override
+	public String toString() {
+
+		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );
+
+		xml.attribute( XMLElement.ATTRIBUTE_NAMESPACE, NAMESPACE );
+		xml.attribute( ATTRIBUTE_TYPE, type );
+
+		return xml.content( content );
+
+	}
+
+}

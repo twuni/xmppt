@@ -6,9 +6,11 @@ import org.twuni.xmppt.xmpp.PacketTransformer;
 public class CorePacketTransformer extends PacketTransformer {
 
 	private final PacketTransformer iqs;
+	private final PacketTransformer presenceChildTransformer;
 
-	public CorePacketTransformer( PacketTransformer iqs ) {
+	public CorePacketTransformer( PacketTransformer iqs, PacketTransformer presenceChildTransformer ) {
 		this.iqs = iqs;
+		this.presenceChildTransformer = presenceChildTransformer;
 	}
 
 	@Override
@@ -20,7 +22,7 @@ public class CorePacketTransformer extends PacketTransformer {
 	public Object transform( XMLElement element ) {
 
 		if( Presence.is( element ) ) {
-			return Presence.from( element );
+			return Presence.from( element, presenceChildTransformer );
 		}
 
 		if( IQ.is( element ) ) {
@@ -31,7 +33,7 @@ public class CorePacketTransformer extends PacketTransformer {
 			return Message.from( element );
 		}
 
-		return null;
+		return element;
 
 	}
 

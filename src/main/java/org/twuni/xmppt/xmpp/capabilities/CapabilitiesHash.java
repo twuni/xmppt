@@ -30,6 +30,22 @@ public class CapabilitiesHash {
 		this.hash = hash;
 	}
 
+	public CapabilitiesQuery query() {
+		return new CapabilitiesQuery( node, hash );
+	}
+
+	public String getHash() {
+		return hash;
+	}
+
+	public String getHashType() {
+		return hashType;
+	}
+
+	public String getNode() {
+		return node;
+	}
+
 	@Override
 	public String toString() {
 

@@ -20,4 +20,9 @@ public class SASLExtension implements Extension {
 		return new SASLFeature();
 	}
 
+	@Override
+	public PacketTransformer presence() {
+		return null;
+	}
+
 }

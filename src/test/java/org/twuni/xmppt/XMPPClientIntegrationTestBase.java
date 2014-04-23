@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
+import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
@@ -44,6 +46,23 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		assertFeatureAvailable( StreamManagement.class );
 		xmpp.write( new Acknowledgment( 0 ) );
 		goOffline();
+	}
+
+	@Ignore( "This, for now, is just an exploratory test." )
+	@Test
+	public void server_shouldReportCapabilities() throws IOException {
+
+		goOnline( "check-capabilities" );
+
+		assertFeatureAvailable( CapabilitiesHash.class );
+
+		CapabilitiesHash capabilities = getFeatures().getFeature( CapabilitiesHash.class );
+
+		xmpp.write( new IQ( generatePacketID(), IQ.TYPE_GET, null, getStream().from(), capabilities.query() ) );
+		xmpp.nextPacket();
+
+		goOffline();
+
 	}
 
 	@Test

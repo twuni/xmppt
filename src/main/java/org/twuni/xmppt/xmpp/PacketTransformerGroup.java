@@ -42,12 +42,12 @@ public class PacketTransformerGroup extends PacketTransformer {
 		for( PacketTransformer transformer : transformers ) {
 			if( transformer.matches( element ) ) {
 				Object packet = transformer.transform( element );
-				if( packet != null ) {
+				if( packet != null && !( packet instanceof XMLElement ) ) {
 					return packet;
 				}
 			}
 		}
-		return null;
+		return element;
 	}
 
 }

@@ -25,7 +25,7 @@ public class SASLPacketTransformer extends PacketTransformer {
 			return SASLPlainAuthentication.from( element );
 		}
 
-		return null;
+		return element;
 
 	}
 

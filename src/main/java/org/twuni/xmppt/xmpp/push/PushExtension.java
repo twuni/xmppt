@@ -16,7 +16,7 @@ public class PushExtension extends PacketTransformer implements Extension {
 		if( Push.is( element ) ) {
 			return Push.from( element );
 		}
-		return null;
+		return element;
 	}
 
 	@Override
@@ -31,6 +31,11 @@ public class PushExtension extends PacketTransformer implements Extension {
 
 	@Override
 	public PacketTransformer feature() {
+		return null;
+	}
+
+	@Override
+	public PacketTransformer presence() {
 		return null;
 	}
 

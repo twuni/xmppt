@@ -17,7 +17,7 @@ public class SASLFeature extends PacketTransformer {
 			return SASLMechanisms.from( element );
 		}
 
-		return null;
+		return element;
 
 	}
 

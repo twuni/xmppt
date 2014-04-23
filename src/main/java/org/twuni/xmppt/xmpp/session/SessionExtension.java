@@ -16,7 +16,7 @@ public class SessionExtension extends PacketTransformer implements Extension {
 		if( Session.is( element ) ) {
 			return Session.from( element );
 		}
-		return null;
+		return element;
 	}
 
 	@Override
@@ -32,6 +32,11 @@ public class SessionExtension extends PacketTransformer implements Extension {
 	@Override
 	public PacketTransformer feature() {
 		return this;
+	}
+
+	@Override
+	public PacketTransformer presence() {
+		return null;
 	}
 
 }

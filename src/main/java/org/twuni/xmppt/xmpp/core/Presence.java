@@ -2,6 +2,7 @@ package org.twuni.xmppt.xmpp.core;
 
 import org.twuni.xmppt.xml.XMLBuilder;
 import org.twuni.xmppt.xml.XMLElement;
+import org.twuni.xmppt.xmpp.PacketTransformer;
 
 public class Presence {
 
@@ -49,14 +50,15 @@ public class Presence {
 		return ELEMENT_NAME.equals( element.name );
 	}
 
-	public static Presence from( XMLElement element ) {
-		return new Presence( element.attribute( ATTRIBUTE_ID ), element.attribute( ATTRIBUTE_TO ), element.attribute( ATTRIBUTE_FROM ), Type.forName( element.attribute( ATTRIBUTE_TYPE ) ) );
+	public static Presence from( XMLElement element, PacketTransformer childTransformer ) {
+		return new Presence( element.attribute( ATTRIBUTE_ID ), element.attribute( ATTRIBUTE_TO ), element.attribute( ATTRIBUTE_FROM ), Type.forName( element.attribute( ATTRIBUTE_TYPE ) ), childTransformer.transform( element.children ) );
 	}
 
 	private final String id;
 	private final String to;
 	private final String from;
 	private final Type type;
+	private final Object [] content;
 
 	public Presence( String id ) {
 		this( id, null, null );
@@ -71,10 +73,15 @@ public class Presence {
 	}
 
 	public Presence( String id, String to, String from, Type type ) {
+		this( id, to, from, type, null );
+	}
+
+	public Presence( String id, String to, String from, Type type, Object [] content ) {
 		this.id = id;
 		this.to = to;
 		this.from = from;
 		this.type = type;
+		this.content = content;
 	}
 
 	public String id() {
@@ -93,6 +100,10 @@ public class Presence {
 		return to;
 	}
 
+	public Object [] getContent() {
+		return content;
+	}
+
 	@Override
 	public String toString() {
 		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );
@@ -100,7 +111,7 @@ public class Presence {
 		xml.attribute( ATTRIBUTE_TO, to );
 		xml.attribute( ATTRIBUTE_ID, id );
 		xml.attribute( ATTRIBUTE_TYPE, type );
-		return xml.close();
+		return xml.content( content );
 	}
 
 }

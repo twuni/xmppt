@@ -61,15 +61,17 @@ public class XMPPPacketConfiguration {
 		PacketTransformerGroup packets = new PacketTransformerGroup();
 		PacketTransformerGroup iqs = new PacketTransformerGroup();
 		PacketTransformerGroup features = new PacketTransformerGroup();
+		PacketTransformerGroup presence = new PacketTransformerGroup();
 
 		for( Extension extension : extensions ) {
 			packets.add( extension.packet() );
 			iqs.add( extension.iq() );
 			features.add( extension.feature() );
+			presence.add( extension.presence() );
 		}
 
 		packets.add( new StreamPacketTransformer( features ) );
-		packets.add( new CorePacketTransformer( iqs ) );
+		packets.add( new CorePacketTransformer( iqs, presence ) );
 
 		return packets;
 

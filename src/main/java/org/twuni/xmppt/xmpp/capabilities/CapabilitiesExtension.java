@@ -13,11 +13,16 @@ public class CapabilitiesExtension extends PacketTransformer implements Extensio
 
 	@Override
 	public PacketTransformer iq() {
-		return null;
+		return this;
 	}
 
 	@Override
 	public PacketTransformer feature() {
+		return this;
+	}
+
+	@Override
+	public PacketTransformer presence() {
 		return this;
 	}
 
@@ -28,10 +33,17 @@ public class CapabilitiesExtension extends PacketTransformer implements Extensio
 
 	@Override
 	public Object transform( XMLElement element ) {
+
 		if( CapabilitiesHash.is( element ) ) {
 			return CapabilitiesHash.from( element );
 		}
-		return null;
+
+		if( CapabilitiesQuery.is( element ) ) {
+			return CapabilitiesQuery.from( element );
+		}
+
+		return element;
+
 	}
 
 }

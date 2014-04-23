@@ -8,4 +8,6 @@ public interface Extension {
 
 	public PacketTransformer feature();
 
+	public PacketTransformer presence();
+
 }

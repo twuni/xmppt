@@ -22,6 +22,11 @@ public class BindExtension extends PacketTransformer implements Extension {
 	}
 
 	@Override
+	public PacketTransformer presence() {
+		return null;
+	}
+
+	@Override
 	public boolean matches( XMLElement element ) {
 		return element.belongsTo( Bind.NAMESPACE );
 	}
@@ -31,7 +36,7 @@ public class BindExtension extends PacketTransformer implements Extension {
 		if( Bind.is( element ) ) {
 			return Bind.from( element );
 		}
-		return null;
+		return element;
 	}
 
 }

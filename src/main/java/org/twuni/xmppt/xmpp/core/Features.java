@@ -33,11 +33,11 @@ public class Features {
 		return getFeature( type ) != null;
 	}
 
-	public Object getFeature( Class<?> type ) {
+	public <T> T getFeature( Class<T> type ) {
 		for( int i = 0, count = content.length; i < count; i++ ) {
 			Object item = content[i];
 			if( type.isInstance( item ) ) {
-				return item;
+				return (T) item;
 			}
 		}
 		return null;

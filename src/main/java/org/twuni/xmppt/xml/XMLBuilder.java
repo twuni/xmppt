@@ -51,7 +51,7 @@ public class XMLBuilder {
 
 	public String content( Object... content ) {
 
-		if( content.length <= 0 || content[0] == null ) {
+		if( content == null || content.length <= 0 || content[0] == null ) {
 			return close();
 		}
 

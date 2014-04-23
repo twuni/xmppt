@@ -21,7 +21,7 @@ public class StreamManagement implements Extension {
 				return StreamManagement.from( element );
 			}
 
-			return null;
+			return element;
 
 		}
 
@@ -45,7 +45,7 @@ public class StreamManagement implements Extension {
 				return AcknowledgmentRequest.from( element );
 			}
 
-			return null;
+			return element;
 
 		}
 
@@ -88,6 +88,11 @@ public class StreamManagement implements Extension {
 	@Override
 	public String toString() {
 		return new XMLBuilder( ELEMENT_NAME ).attribute( XMLElement.ATTRIBUTE_NAMESPACE, StreamManagement.NAMESPACE ).close();
+	}
+
+	@Override
+	public PacketTransformer presence() {
+		return null;
 	}
 
 }
