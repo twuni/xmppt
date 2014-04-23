@@ -8,30 +8,35 @@ import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
-@Ignore( "These are integration tests, and should not be run automatically." )
-public class XMPPClientTest extends XMPPClientTestFixture {
+public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixture {
+
+	@Ignore( "This is currently known to fail." )
+	@Test
+	public void server_shouldResendDroppedMessage() throws IOException {
+		invokeDroppedMessage();
+		goOnline( "expect-resend-dropped-message" );
+		xmpp.next();
+		goOffline();
+	}
 
 	@Test
 	public void server_shouldReportNoPacketsReceived_whenNoPacketsHaveBeenSent() throws IOException {
-
-		connect( "localhost", 5222, false, "example.com" );
-		login( "alice", "changeit" );
-		bind( "test" );
+		goOnline( "send-nothing-expect-ack-0" );
 		assertStreamManagement();
-
 		assertPacketsReceived( 0 );
+		goOffline();
+	}
 
-		logout();
-		disconnect();
-
+	protected void invokeDroppedMessage() throws IOException {
+		goOnline( "drop-message-on-purpose" );
+		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>This message was dropped.</body>" ) );
+		goOffline();
 	}
 
 	@Test
 	public void server_shouldReportSinglePacketReceived_whenOnePacketHasBeenSent() throws IOException {
 
-		connect( "localhost", 5222, false, "example.com" );
-		login( "alice", "changeit" );
-		bind( "test" );
+		goOnline( "send-message-expect-ack-1" );
 		assertStreamManagement();
 
 		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>Hello, world.</body>" ) );
@@ -39,8 +44,7 @@ public class XMPPClientTest extends XMPPClientTestFixture {
 
 		assertPacketsReceived( 1 );
 
-		logout();
-		disconnect();
+		goOffline();
 
 	}
 
@@ -51,19 +55,19 @@ public class XMPPClientTest extends XMPPClientTestFixture {
 
 	@Test( expected = IOException.class )
 	public void connect_shouldProduceError_ifServiceNameUnknown() throws IOException {
-		connect( "localhost", 5222, false, "void.example.com" );
+		connect( getHost(), getPort(), isSecure(), String.format( "%s-unknown", getServiceName() ) );
 	}
 
 	@Test( expected = IOException.class )
 	public void login_shouldProduceError_ifUsernameUnknown() throws IOException {
-		connect( "localhost", 5222, false, "example.com" );
-		login( "idonotexist", "changeit" );
+		connect();
+		login( "idonotexist", getPassword() );
 	}
 
 	@Test( expected = IOException.class )
 	public void login_shouldProduceError_ifPasswordNotAccepted() throws IOException {
-		connect( "localhost", 5222, false, "example.com" );
-		login( "alice", "iamnotvalid" );
+		connect();
+		login( getUsername(), "iamnotvalid" );
 	}
 
 	protected void assertStreamManagement() {
@@ -72,17 +76,10 @@ public class XMPPClientTest extends XMPPClientTestFixture {
 
 	@Test
 	public void server_shouldIgnoreAcknowledgmentWithExpectedValue() throws IOException {
-
-		connect( "localhost", 5222, false, "example.com" );
-		login( "alice", "changeit" );
-		bind( "test" );
+		goOnline( "send-unsolicited-ack-0" );
 		assertStreamManagement();
-
 		xmpp.write( new Acknowledgment( 0 ) );
-
-		logout();
-		disconnect();
-
+		goOffline();
 	}
 
 }

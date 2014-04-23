@@ -89,6 +89,21 @@ public class XMPPClientTestFixture extends Assert {
 		return contexts.isEmpty() ? null : contexts.peek();
 	}
 
+	protected void goOffline() throws IOException {
+		logout();
+		disconnect();
+	}
+
+	protected void goOnline() throws IOException {
+		goOnline( getResourceName() );
+	}
+
+	protected void goOnline( String resourceName ) throws IOException {
+		connect();
+		login();
+		bind( resourceName );
+	}
+
 	private final Stack<Context> contexts = new Stack<Context>();
 	private String fullJID;
 	protected XMPPSocket xmpp;
