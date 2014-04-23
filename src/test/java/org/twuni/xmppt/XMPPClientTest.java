@@ -7,6 +7,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.twuni.xmppt.xmpp.core.Message;
+import org.twuni.xmppt.xmpp.stream.Acknowledgment;
+import org.twuni.xmppt.xmpp.stream.StreamManagementFeature;
 
 @Ignore( "These are integration tests, and should not be run automatically." )
 public class XMPPClientTest extends XMPPClientTestFixture {
@@ -26,13 +28,25 @@ public class XMPPClientTest extends XMPPClientTestFixture {
 
 	}
 
+	@Test
+	public void server_shouldIgnoreAcknowledgmentWithExpectedValue() throws IOException {
+		xmpp.write( new Acknowledgment( 0 ) );
+	}
+
 	@Before
 	public void setUp() throws IOException {
-		connect();
+
+		connect( "localhost", 5222, false, "example.com" );
+		login( "alice", "changeit" );
+		bind( "test" );
+
+		assertTrue( "XEP-0198 support should have been included in the stream features provided by the server.", getFeatures().hasFeature( StreamManagementFeature.class ) );
+
 	}
 
 	@After
 	public void tearDown() throws IOException {
+		logout();
 		disconnect();
 	}
 

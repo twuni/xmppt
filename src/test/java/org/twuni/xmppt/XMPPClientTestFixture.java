@@ -1,6 +1,7 @@
 package org.twuni.xmppt;
 
 import java.io.IOException;
+import java.util.Stack;
 
 import org.junit.Assert;
 import org.twuni.xmppt.xmpp.XMPPSocket;
@@ -15,9 +16,21 @@ import org.twuni.xmppt.xmpp.session.Session;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 import org.twuni.xmppt.xmpp.stream.Stream;
-import org.twuni.xmppt.xmpp.stream.StreamManagementFeature;
 
 public class XMPPClientTestFixture extends Assert {
+
+	private static class Context {
+
+		public Stream stream;
+		public Features features;
+		public int sequence;
+
+		public String nextID() {
+			sequence++;
+			return String.format( "%s-%d", stream.id(), Integer.valueOf( sequence ) );
+		}
+
+	}
 
 	protected String getServiceName() {
 		return "example.com";
@@ -48,7 +61,8 @@ public class XMPPClientTestFixture extends Assert {
 	}
 
 	protected Features getFeatures() {
-		return features;
+		Context context = getContext();
+		return context != null ? context.features : null;
 	}
 
 	protected String getFullJID() {
@@ -56,69 +70,60 @@ public class XMPPClientTestFixture extends Assert {
 	}
 
 	protected String getSimpleJID() {
-		return String.format( "%s@%s", getUsername(), getServiceName() );
+		return getFullJID().replaceAll( "/.+$", "" );
 	}
 
 	protected String generatePacketID() {
-		sequence++;
-		if( streamID == null ) {
-			streamID = Long.toHexString( System.currentTimeMillis() );
-		}
-		return String.format( "%s-%d", streamID, Integer.valueOf( sequence ) );
+		Context context = getContext();
+		return context != null ? context.nextID() : Long.toHexString( System.currentTimeMillis() );
 	}
 
-	private String streamID;
-	private int sequence;
-	private Features features;
+	private Stream getStream() {
+		Context context = getContext();
+		return context != null ? context.stream : null;
+	}
+
+	private Context getContext() {
+		return contexts.isEmpty() ? null : contexts.peek();
+	}
+
+	private final Stack<Context> contexts = new Stack<Context>();
 	private String fullJID;
 	protected XMPPSocket xmpp;
 
 	protected void connect() throws IOException {
-		connect( getHost(), getPort(), isSecure() );
+		connect( getHost(), getPort(), isSecure(), getServiceName() );
 	}
 
-	protected void connect( String host, int port, boolean secure ) throws IOException {
+	protected void connect( String host, int port, boolean secure, String serviceName ) throws IOException {
 
 		xmpp = new XMPPSocket( host, port, secure );
 
-		xmpp.write( new Stream( getServiceName() ) );
+		xmpp.write( new Stream( serviceName ) );
 
-		Stream stream = xmpp.nextPacket();
+		Context context = new Context();
 
-		assertEquals( getServiceName(), stream.from() );
-		streamID = stream.id();
+		context.stream = xmpp.nextPacket();
+		context.features = xmpp.nextPacket();
 
-		features = xmpp.nextPacket();
+		contexts.push( context );
 
-		if( features.hasFeature( SASLMechanisms.class ) ) {
+		assertEquals( serviceName, context.stream.from() );
 
-			SASLMechanisms mechanisms = (SASLMechanisms) features.getFeature( SASLMechanisms.class );
+	}
 
-			if( mechanisms.hasMechanism( SASLPlainAuthentication.MECHANISM ) ) {
+	protected void bind() throws IOException {
+		bind( getResourceName() );
+	}
 
-				xmpp.write( new SASLPlainAuthentication( getUsername(), getPassword() ) );
-
-				SASLSuccess success = xmpp.nextPacket();
-
-				xmpp.write( new Stream( getServiceName() ) );
-
-				stream = xmpp.nextPacket();
-				streamID = stream.id();
-
-				assertEquals( getServiceName(), stream.from() );
-
-				features = xmpp.nextPacket();
-
-			}
-
-		}
+	protected void bind( String resourceName ) throws IOException {
 
 		String id = null;
 
-		if( features.hasFeature( Bind.class ) ) {
+		if( getFeatures().hasFeature( Bind.class ) ) {
 
 			id = generatePacketID();
-			xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, Bind.resource( getResourceName() ) ) );
+			xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, Bind.resource( resourceName ) ) );
 
 			IQ bindIQ = xmpp.nextPacket();
 
@@ -130,7 +135,7 @@ public class XMPPClientTestFixture extends Assert {
 			fullJID = bind.jid();
 			assertNotNull( "Server failed to provide a bound JID.", fullJID );
 
-			if( features.hasFeature( Session.class ) ) {
+			if( getFeatures().hasFeature( Session.class ) ) {
 
 				id = generatePacketID();
 				xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, new Session() ) );
@@ -148,12 +153,44 @@ public class XMPPClientTestFixture extends Assert {
 			Presence presence = xmpp.nextPacket();
 
 			assertEquals( id, presence.id() );
-			assertEquals( bind.jid(), presence.from() );
-			assertEquals( bind.jid(), presence.to() );
+			assertEquals( fullJID, presence.from() );
+			assertEquals( fullJID, presence.to() );
 
 		}
 
-		assertTrue( "XEP-0198 support should have been included in the stream features provided by the server.", features.hasFeature( StreamManagementFeature.class ) );
+	}
+
+	protected void login() throws IOException {
+		login( getUsername(), getPassword() );
+	}
+
+	protected void login( String username, String password ) throws IOException {
+
+		if( getFeatures().hasFeature( SASLMechanisms.class ) ) {
+
+			SASLMechanisms mechanisms = (SASLMechanisms) getFeatures().getFeature( SASLMechanisms.class );
+
+			if( mechanisms.hasMechanism( SASLPlainAuthentication.MECHANISM ) ) {
+
+				xmpp.write( new SASLPlainAuthentication( username, password ) );
+
+				SASLSuccess success = xmpp.nextPacket();
+
+				String serviceName = getStream().from();
+				xmpp.write( new Stream( serviceName ) );
+
+				Context context = new Context();
+
+				context.stream = xmpp.nextPacket();
+				context.features = xmpp.nextPacket();
+
+				contexts.push( context );
+
+				assertEquals( serviceName, context.stream.from() );
+
+			}
+
+		}
 
 	}
 
@@ -163,21 +200,26 @@ public class XMPPClientTestFixture extends Assert {
 		assertEquals( h, acknowledgment.getH() );
 	}
 
+	protected void logout() throws IOException {
+		if( !contexts.isEmpty() ) {
+			xmpp.write( new Presence( generatePacketID(), Presence.Type.UNAVAILABLE ) );
+			xmpp.write( "</stream:stream>" );
+			contexts.pop();
+		}
+		fullJID = null;
+	}
+
 	protected void disconnect() throws IOException {
 
-		xmpp.write( new Presence( generatePacketID(), Presence.Type.UNAVAILABLE ) );
-
-		xmpp.write( "</stream:stream>" );
-		xmpp.write( "</stream:stream>" );
+		while( !contexts.isEmpty() ) {
+			xmpp.write( "</stream:stream>" );
+			contexts.pop();
+		}
 
 		xmpp.flush();
 
 		xmpp.close();
 
-		streamID = null;
-		sequence = 0;
-		fullJID = null;
-		features = null;
 		xmpp = null;
 
 	}
