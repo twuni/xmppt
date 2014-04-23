@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import org.twuni.Logger;
+
 public class EventHandler {
 
 	private static final Logger LOG = new Logger( EventHandler.class.getName() );

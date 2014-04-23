@@ -8,7 +8,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.List;
 
-import org.twuni.nio.server.Logger;
+import org.twuni.Logger;
 import org.twuni.xmppt.client.SocketFactory;
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xml.XMLElementParser;

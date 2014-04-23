@@ -11,6 +11,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 
+import org.twuni.Logger;
+
 public class Acceptor implements Runnable, Closeable {
 
 	private static final Logger LOG = new Logger( Acceptor.class.getName() );

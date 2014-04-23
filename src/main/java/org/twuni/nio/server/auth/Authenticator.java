@@ -1,4 +1,4 @@
-package org.twuni.nio.server;
+package org.twuni.nio.server.auth;
 
 public interface Authenticator {
 

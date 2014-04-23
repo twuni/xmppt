@@ -6,10 +6,10 @@ import java.net.SocketAddress;
 import java.nio.channels.Selector;
 
 import org.twuni.nio.server.Acceptor;
-import org.twuni.nio.server.Authenticator;
 import org.twuni.nio.server.ConnectionFactory;
 import org.twuni.nio.server.DispatcherProvider;
 import org.twuni.nio.server.EventHandler;
+import org.twuni.nio.server.auth.Authenticator;
 
 public class XMPPAcceptor extends Acceptor {
 

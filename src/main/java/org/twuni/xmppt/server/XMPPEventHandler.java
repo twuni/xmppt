@@ -3,12 +3,12 @@ package org.twuni.xmppt.server;
 import java.nio.BufferOverflowException;
 import java.util.List;
 
-import org.twuni.nio.server.AuthenticationException;
-import org.twuni.nio.server.Authenticator;
+import org.twuni.Logger;
 import org.twuni.nio.server.Connection;
 import org.twuni.nio.server.EventHandler;
-import org.twuni.nio.server.Logger;
 import org.twuni.nio.server.Transporter;
+import org.twuni.nio.server.auth.AuthenticationException;
+import org.twuni.nio.server.auth.Authenticator;
 import org.twuni.xmppt.server.XMPPConnection.State;
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xml.XMLElementParser;

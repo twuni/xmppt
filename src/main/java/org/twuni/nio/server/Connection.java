@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import org.twuni.Logger;
+
 public abstract class Connection implements Writable {
 
 	public static final int DEFAULT_BUFFER_SIZE = 4 * 1024;

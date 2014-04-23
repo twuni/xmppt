@@ -3,7 +3,7 @@ package org.twuni.xmppt.server;
 import java.io.IOException;
 
 import org.twuni.nio.server.Acceptor;
-import org.twuni.nio.server.AutomaticAuthenticator;
+import org.twuni.nio.server.auth.AutomaticAuthenticator;
 
 public class XMPPServer {
 

@@ -1,4 +1,6 @@
-package org.twuni.nio.server;
+package org.twuni.nio.server.auth;
+
+import org.twuni.Logger;
 
 public class AutomaticAuthenticator extends SimpleAuthenticator {
 	

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.twuni.Logger;
 import org.twuni.xmppt.xmpp.core.Message;
 
 public class Transporter {

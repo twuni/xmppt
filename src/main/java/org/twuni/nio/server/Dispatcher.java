@@ -7,6 +7,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
 
+import org.twuni.Logger;
+
 public class Dispatcher implements Runnable, Closeable {
 
 	private static final Logger LOG = new Logger( Dispatcher.class.getName() );

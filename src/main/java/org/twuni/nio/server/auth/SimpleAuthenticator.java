@@ -1,4 +1,4 @@
-package org.twuni.nio.server;
+package org.twuni.nio.server.auth;
 
 import java.util.HashMap;
 import java.util.Map;
