@@ -74,6 +74,27 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	}
 
 	@Test
+	public void server_shouldAcknowledgeAllPacketsSent() throws IOException {
+
+		goOnline( "send-n-messages-expect-ack-n" );
+		assertFeatureAvailable( StreamManagement.class );
+
+		int n = 10;
+		for( int i = 0; i < n; i++ ) {
+			xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), String.format( "<body>This message is at index %d.</body>", Integer.valueOf( i ) ) ) );
+		}
+
+		for( int i = 0; i < n; i++ ) {
+			xmpp.nextPacket();// Ignore the messages we have sent.
+		}
+
+		assertPacketsReceived( n );
+
+		goOffline();
+
+	}
+
+	@Test
 	public void server_shouldReportSinglePacketReceived_whenOnePacketHasBeenSent() throws IOException {
 
 		goOnline( "send-message-expect-ack-1" );
@@ -83,6 +104,32 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		xmpp.nextPacket();// Ignore this packet we have sent to ourselves.
 
 		assertPacketsReceived( 1 );
+
+		goOffline();
+
+	}
+
+	@Ignore( "This is currently known to fail." )
+	@Test
+	public void server_shouldResendPacket_whenClientDoesNotAcknowledgeIt() throws IOException {
+
+		goOnline( "request-resend" );
+		assertFeatureAvailable( StreamManagement.class );
+
+		// Trigger a packet to get sent to us.
+		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>Hello, world.</body>" ) );
+
+		// The server will immediately echo this message back to us.
+		xmpp.nextPacket();
+
+		// Tell the server we didn't receive the message.
+		xmpp.write( new Acknowledgment( 0 ) );
+
+		// Expect the server to send the message again.
+		xmpp.nextPacket();
+
+		// Place nicely, and acknowledge receipt this time.
+		xmpp.write( new Acknowledgment( 1 ) );
 
 		goOffline();
 
