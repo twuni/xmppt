@@ -68,8 +68,8 @@ public class XMPPPacketConfiguration {
 			features.add( extension.feature() );
 		}
 
-		packets.add( new StreamPacketTransformer() );
-		packets.add( new CorePacketTransformer( iqs, features ) );
+		packets.add( new StreamPacketTransformer( features ) );
+		packets.add( new CorePacketTransformer( iqs ) );
 
 		return packets;
 

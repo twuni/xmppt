@@ -1,7 +1,9 @@
 package org.twuni.xmppt.xml;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 public class XMLElementParser {
@@ -19,6 +21,8 @@ public class XMLElementParser {
 	public List<XMLElement> parse( byte [] in ) {
 		return parse( in, 0, in.length );
 	}
+
+	private final Map<String, String> namespaces = new HashMap<String, String>();
 
 	public List<XMLElement> parse( byte [] in, int offset, int length ) {
 
@@ -40,12 +44,12 @@ public class XMLElementParser {
 					boolean isProcessingInstruction = in[end] == '?';
 
 					if( isProcessingInstruction ) {
-						
+
 						int skipped = 0;
 
 						do {
 							skipped++;
-						} while( in[end+skipped] != '?' );
+						} while( in[end + skipped] != '?' );
 
 						i += skipped + 2;
 
@@ -81,6 +85,9 @@ public class XMLElementParser {
 
 					if( starting ) {
 						XMLElement prototype = new XMLElement( parent, name, null );
+						if( prefix != null && namespaces.containsKey( prefix ) ) {
+							prototype.attributes.put( XMLElement.ATTRIBUTE_NAMESPACE, namespaces.get( prefix ) );
+						}
 						if( parent != null ) {
 							parent.children.add( prototype );
 						}
@@ -156,6 +163,7 @@ public class XMLElementParser {
 						if( attributePrefixIndex > -1 && prefix != null ) {
 							String namespace = attributeName.substring( attributePrefixIndex + 1 );
 							if( namespace.equals( prefix ) ) {
+								namespaces.put( namespace, attributeValue );
 								x.attributes.put( XMLElement.ATTRIBUTE_NAMESPACE, attributeValue );
 							}
 						}

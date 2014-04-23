@@ -6,11 +6,9 @@ import org.twuni.xmppt.xmpp.PacketTransformer;
 public class CorePacketTransformer extends PacketTransformer {
 
 	private final PacketTransformer iqs;
-	private final PacketTransformer features;
 
-	public CorePacketTransformer( PacketTransformer iqs, PacketTransformer features ) {
+	public CorePacketTransformer( PacketTransformer iqs ) {
 		this.iqs = iqs;
-		this.features = features;
 	}
 
 	@Override
@@ -27,10 +25,6 @@ public class CorePacketTransformer extends PacketTransformer {
 
 		if( IQ.is( element ) ) {
 			return IQ.from( element, iqs );
-		}
-
-		if( Features.is( element ) ) {
-			return Features.from( element, features );
 		}
 
 		if( Message.is( element ) ) {

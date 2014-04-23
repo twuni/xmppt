@@ -9,6 +9,7 @@ import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.core.Features;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Presence;
+import org.twuni.xmppt.xmpp.sasl.SASLFailure;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
 import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
@@ -16,6 +17,7 @@ import org.twuni.xmppt.xmpp.session.Session;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 import org.twuni.xmppt.xmpp.stream.Stream;
+import org.twuni.xmppt.xmpp.stream.StreamError;
 
 public class XMPPClientTestFixture extends Assert {
 
@@ -97,6 +99,8 @@ public class XMPPClientTestFixture extends Assert {
 
 	protected void connect( String host, int port, boolean secure, String serviceName ) throws IOException {
 
+		prepareConnect();
+
 		xmpp = new XMPPSocket( host, port, secure );
 
 		xmpp.write( new Stream( serviceName ) );
@@ -104,12 +108,38 @@ public class XMPPClientTestFixture extends Assert {
 		Context context = new Context();
 
 		context.stream = xmpp.nextPacket();
-		context.features = xmpp.nextPacket();
+
+		Object packet = xmpp.next();
+
+		if( packet instanceof StreamError ) {
+			throw new IOException( ( (StreamError) packet ).content.toString() );
+		}
+
+		if( packet instanceof Features ) {
+			context.features = (Features) packet;
+		}
 
 		contexts.push( context );
 
 		assertEquals( serviceName, context.stream.from() );
 
+	}
+
+	private void prepareConnect() throws IOException {
+		if( isConnected() ) {
+			if( isAuthenticated() ) {
+				logout();
+			}
+			disconnect();
+		}
+	}
+
+	protected boolean isConnected() {
+		return xmpp != null;
+	}
+
+	protected boolean isAuthenticated() {
+		return fullJID != null;
 	}
 
 	protected void bind() throws IOException {
@@ -174,19 +204,27 @@ public class XMPPClientTestFixture extends Assert {
 
 				xmpp.write( new SASLPlainAuthentication( username, password ) );
 
-				SASLSuccess success = xmpp.nextPacket();
+				Object result = xmpp.next();
 
-				String serviceName = getStream().from();
-				xmpp.write( new Stream( serviceName ) );
+				if( result instanceof SASLFailure ) {
+					throw new IOException( ( (SASLFailure) result ).reason );
+				}
 
-				Context context = new Context();
+				if( result instanceof SASLSuccess ) {
 
-				context.stream = xmpp.nextPacket();
-				context.features = xmpp.nextPacket();
+					String serviceName = getStream().from();
+					xmpp.write( new Stream( serviceName ) );
 
-				contexts.push( context );
+					Context context = new Context();
 
-				assertEquals( serviceName, context.stream.from() );
+					context.stream = xmpp.nextPacket();
+					context.features = xmpp.nextPacket();
+
+					contexts.push( context );
+
+					assertEquals( serviceName, context.stream.from() );
+
+				}
 
 			}
 
@@ -211,16 +249,22 @@ public class XMPPClientTestFixture extends Assert {
 
 	protected void disconnect() throws IOException {
 
+		if( isAuthenticated() ) {
+			logout();
+		}
+
 		while( !contexts.isEmpty() ) {
-			xmpp.write( "</stream:stream>" );
+			if( xmpp != null ) {
+				xmpp.write( "</stream:stream>" );
+			}
 			contexts.pop();
 		}
 
-		xmpp.flush();
-
-		xmpp.close();
-
-		xmpp = null;
+		if( xmpp != null ) {
+			xmpp.flush();
+			xmpp.close();
+			xmpp = null;
+		}
 
 	}
 
