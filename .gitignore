@@ -1,1 +1,2 @@
-target
+/target
+/src/test/java/org/twuni/xmppt/XMPPClientIntegrationTest.java
