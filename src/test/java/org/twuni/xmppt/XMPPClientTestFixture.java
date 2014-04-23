@@ -1,144 +1,185 @@
 package org.twuni.xmppt;
 
 import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-
-import javax.net.ssl.SSLContext;
 
 import org.junit.Assert;
-import org.twuni.xmppt.xmpp.PacketListener;
-import org.twuni.xmppt.xmpp.XMPPClient;
+import org.twuni.xmppt.xmpp.XMPPSocket;
+import org.twuni.xmppt.xmpp.bind.Bind;
+import org.twuni.xmppt.xmpp.core.Features;
+import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Presence;
+import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
+import org.twuni.xmppt.xmpp.sasl.SASLPlainAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
+import org.twuni.xmppt.xmpp.session.Session;
+import org.twuni.xmppt.xmpp.stream.Acknowledgment;
+import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
+import org.twuni.xmppt.xmpp.stream.Stream;
+import org.twuni.xmppt.xmpp.stream.StreamManagementFeature;
 
-public class XMPPClientTestFixture extends Assert implements PacketListener {
+public class XMPPClientTestFixture extends Assert {
 
-	private String serviceName = "twuni.org";
-	private String username = "alice";
-	private String password = "changeit";
-	private String resource = "test";
-	private XMPPClient xmpp;
-	private Socket socket;
+	protected String getServiceName() {
+		return "example.com";
+	}
 
-	public void connect( String host, int port ) throws IOException {
-		try {
-			connect( host, port, false );
-		} catch( KeyManagementException impossible ) {
-			// Impossible.
-		} catch( NoSuchAlgorithmException impossible ) {
-			// Impossible.
+	protected String getUsername() {
+		return "alice";
+	}
+
+	protected String getPassword() {
+		return "changeit";
+	}
+
+	protected String getResourceName() {
+		return "test";
+	}
+
+	protected String getHost() {
+		return "localhost";
+	}
+
+	protected int getPort() {
+		return 5222;
+	}
+
+	protected boolean isSecure() {
+		return false;
+	}
+
+	protected Features getFeatures() {
+		return features;
+	}
+
+	protected String getFullJID() {
+		return fullJID;
+	}
+
+	protected String getSimpleJID() {
+		return String.format( "%s@%s", getUsername(), getServiceName() );
+	}
+
+	protected String generatePacketID() {
+		sequence++;
+		if( streamID == null ) {
+			streamID = Long.toHexString( System.currentTimeMillis() );
 		}
+		return String.format( "%s-%d", streamID, Integer.valueOf( sequence ) );
 	}
 
-	public void connect( String host, int port, boolean secure ) throws IOException, KeyManagementException, NoSuchAlgorithmException {
-		this.socket = secure ? createSecureSocket( host, port ) : new Socket( host, port );
-		onConnected();
+	private String streamID;
+	private int sequence;
+	private Features features;
+	private String fullJID;
+	protected XMPPSocket xmpp;
+
+	protected void connect() throws IOException {
+		connect( getHost(), getPort(), isSecure() );
 	}
 
-	public void service( String serviceName ) {
-		this.serviceName = serviceName;
-	}
+	protected void connect( String host, int port, boolean secure ) throws IOException {
 
-	public void login( String username, String password ) {
-		this.username = username;
-		this.password = password;
-	}
+		xmpp = new XMPPSocket( host, port, secure );
 
-	public void bind( String resource ) {
-		this.resource = resource;
-	}
+		xmpp.write( new Stream( getServiceName() ) );
 
-	public static Socket createSecureSocket( String host, int port ) throws NoSuchAlgorithmException, KeyManagementException, IOException, UnknownHostException {
+		Stream stream = xmpp.nextPacket();
 
-		SSLContext tls = SSLContext.getInstance( "TLSv1.2" );
+		assertEquals( getServiceName(), stream.from() );
+		streamID = stream.id();
 
-		try {
-			tls.getSocketFactory();
-		} catch( IllegalStateException exception ) {
-			tls.init( null, null, new SecureRandom() );
-		}
+		features = xmpp.nextPacket();
 
-		return tls.getSocketFactory().createSocket( host, port );
+		if( features.hasFeature( SASLMechanisms.class ) ) {
 
-	}
+			SASLMechanisms mechanisms = (SASLMechanisms) features.getFeature( SASLMechanisms.class );
 
-	public void start() throws IOException, KeyManagementException, NoSuchAlgorithmException {
-		xmpp = new XMPPClient( socket, serviceName, username, password, resource );
-		xmpp.addPacketListener( this );
-		xmpp.waitForConnectionToDie();
-		xmpp.waitForConnectionToDie();
-	}
+			if( mechanisms.hasMechanism( SASLPlainAuthentication.MECHANISM ) ) {
 
-	public void stop() {
-		try {
-			xmpp.quit();
-		} catch( IOException exception ) {
-			onPacketException( exception );
-		}
-		onDisconnected();
-	}
+				xmpp.write( new SASLPlainAuthentication( getUsername(), getPassword() ) );
 
-	protected void send( Object packet ) {
-		try {
-			xmpp.send( packet );
-		} catch( IOException exception ) {
-			onPacketException( exception );
-		}
-	}
+				SASLSuccess success = xmpp.nextPacket();
 
-	@Override
-	public void onPacketReceived( Object packet ) {
+				xmpp.write( new Stream( getServiceName() ) );
 
-		if( packet instanceof Presence ) {
-			onAvailable();
-		}
+				stream = xmpp.nextPacket();
+				streamID = stream.id();
 
-		if( packet instanceof SASLSuccess ) {
-			onAuthenticated();
-		}
+				assertEquals( getServiceName(), stream.from() );
 
-	}
+				features = xmpp.nextPacket();
 
-	@Override
-	public void onPacketSent( Object packet ) {
-
-		if( packet instanceof Presence ) {
-			Presence presence = (Presence) packet;
-			if( Presence.Type.UNAVAILABLE.equals( presence.type() ) ) {
-				onUnavailable();
 			}
+
 		}
 
+		String id = null;
+
+		if( features.hasFeature( Bind.class ) ) {
+
+			id = generatePacketID();
+			xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, Bind.resource( getResourceName() ) ) );
+
+			IQ bindIQ = xmpp.nextPacket();
+
+			assertEquals( id, bindIQ.id() );
+			assertEquals( IQ.TYPE_RESULT, bindIQ.type() );
+
+			Bind bind = (Bind) bindIQ.getContent();
+
+			fullJID = bind.jid();
+			assertNotNull( "Server failed to provide a bound JID.", fullJID );
+
+			if( features.hasFeature( Session.class ) ) {
+
+				id = generatePacketID();
+				xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, new Session() ) );
+
+				IQ sessionIQ = xmpp.nextPacket();
+
+				assertEquals( id, sessionIQ.id() );
+				assertEquals( IQ.TYPE_RESULT, sessionIQ.type() );
+
+			}
+
+			id = generatePacketID();
+			xmpp.write( new Presence( id ) );
+
+			Presence presence = xmpp.nextPacket();
+
+			assertEquals( id, presence.id() );
+			assertEquals( bind.jid(), presence.from() );
+			assertEquals( bind.jid(), presence.to() );
+
+		}
+
+		assertTrue( "XEP-0198 support should have been included in the stream features provided by the server.", features.hasFeature( StreamManagementFeature.class ) );
+
 	}
 
-	@Override
-	public void onPacketException( Throwable exception ) {
-		exception.printStackTrace();
-		fail( exception.getLocalizedMessage() );
+	protected void assertPacketsReceived( int h ) throws IOException {
+		xmpp.write( new AcknowledgmentRequest() );
+		Acknowledgment acknowledgment = xmpp.nextPacket();
+		assertEquals( h, acknowledgment.getH() );
 	}
 
-	protected void onConnected() {
-		// Blah.
-	}
+	protected void disconnect() throws IOException {
 
-	protected void onAuthenticated() {
-		// Blah.
-	}
+		xmpp.write( new Presence( generatePacketID(), Presence.Type.UNAVAILABLE ) );
 
-	protected void onAvailable() {
-		// Blah.
-	}
+		xmpp.write( "</stream:stream>" );
+		xmpp.write( "</stream:stream>" );
 
-	protected void onUnavailable() {
-		// Blah.
-	}
+		xmpp.flush();
 
-	protected void onDisconnected() {
-		// Blah.
+		xmpp.close();
+
+		streamID = null;
+		sequence = 0;
+		fullJID = null;
+		features = null;
+		xmpp = null;
+
 	}
 
 }

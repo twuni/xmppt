@@ -1,49 +1,39 @@
 package org.twuni.xmppt;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.twuni.xmppt.xmpp.core.Message;
-import org.twuni.xmppt.xmpp.stream.Acknowledgment;
-import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 
+@Ignore( "These are integration tests, and should not be run automatically." )
 public class XMPPClientTest extends XMPPClientTestFixture {
 
-	@Ignore
 	@Test
-	public void sanityCheck() throws IOException, NoSuchAlgorithmException, KeyManagementException {
-		connect( "localhost", 5222, false );
-		service( "example.com" );
-		login( "alice", "changeit" );
-		bind( "xep0198-integration-test" );
-		start();
+	public void server_shouldReportNoPacketsReceived_whenNoPacketsHaveBeenSent() throws IOException {
+		assertPacketsReceived( 0 );
 	}
 
-	@Override
-	public void onPacketReceived( Object packet ) {
+	@Test
+	public void server_shouldReportSinglePacketReceived_whenOnePacketHasBeenSent() throws IOException {
 
-		System.out.println( String.format( "RECV [%s] %s", packet.getClass().getName(), packet ) );
-		super.onPacketReceived( packet );
+		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>Hello, world.</body>" ) );
+		xmpp.nextPacket();// Ignore this packet we have sent to ourselves.
 
-		if( packet instanceof Acknowledgment ) {
-			stop();
-		}
+		assertPacketsReceived( 1 );
 
 	}
 
-	@Override
-	public void onPacketSent( Object packet ) {
-		System.out.println( String.format( "SEND [%s] %s", packet.getClass().getName(), packet ) );
-		super.onPacketSent( packet );
+	@Before
+	public void setUp() throws IOException {
+		connect();
 	}
 
-	@Override
-	protected void onAvailable() {
-		send( new Message( "abc123-12", Message.TYPE_CHAT, null, "alice@example.com", "<body>This is a good test.</body>" ) );
-		send( new AcknowledgmentRequest() );
+	@After
+	public void tearDown() throws IOException {
+		disconnect();
 	}
 
 }

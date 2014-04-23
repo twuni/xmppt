@@ -13,7 +13,7 @@ public class StreamManagement extends PacketTransformer implements Extension {
 	}
 
 	public static boolean is( XMLElement element ) {
-		return NAMESPACE.equals( element.attribute( XMLElement.ATTRIBUTE_NAMESPACE ) );
+		return element.belongsTo( NAMESPACE );
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class StreamManagement extends PacketTransformer implements Extension {
 
 	@Override
 	public PacketTransformer feature() {
-		return null;
+		return this;
 	}
 
 	@Override
@@ -38,13 +38,21 @@ public class StreamManagement extends PacketTransformer implements Extension {
 
 	@Override
 	public Object transform( XMLElement element ) {
+
+		if( StreamManagementFeature.is( element ) ) {
+			return StreamManagementFeature.from( element );
+		}
+
 		if( Acknowledgment.is( element ) ) {
 			return Acknowledgment.from( element );
 		}
+
 		if( AcknowledgmentRequest.is( element ) ) {
 			return AcknowledgmentRequest.from( element );
 		}
+
 		return null;
+
 	}
 
 }

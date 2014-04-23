@@ -13,6 +13,7 @@ import org.twuni.xmppt.xmpp.ping.PingExtension;
 import org.twuni.xmppt.xmpp.sasl.SASLExtension;
 import org.twuni.xmppt.xmpp.session.SessionExtension;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
+import org.twuni.xmppt.xmpp.stream.StreamPacketTransformer;
 
 public class XMPPPacketConfiguration {
 
@@ -67,6 +68,7 @@ public class XMPPPacketConfiguration {
 			features.add( extension.feature() );
 		}
 
+		packets.add( new StreamPacketTransformer() );
 		packets.add( new CorePacketTransformer( iqs, features ) );
 
 		return packets;

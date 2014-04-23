@@ -29,13 +29,29 @@ public class XMLElementParser {
 
 		for( int i = 0; i < length; i++ ) {
 
-			byte b = in[offset + i];
 			int start = offset + i;
+			byte b = in[start];
 			int end = start + 1;
 
 			switch( b ) {
 
 				case '<':
+
+					boolean isProcessingInstruction = in[end] == '?';
+
+					if( isProcessingInstruction ) {
+						
+						int skipped = 0;
+
+						do {
+							skipped++;
+						} while( in[end+skipped] != '?' );
+
+						i += skipped + 2;
+
+						break;
+
+					}
 
 					boolean starting = in[start + 1] != '/';
 

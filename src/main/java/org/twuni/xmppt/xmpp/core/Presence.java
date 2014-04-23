@@ -85,6 +85,14 @@ public class Presence {
 		return type;
 	}
 
+	public String from() {
+		return from;
+	}
+
+	public String to() {
+		return to;
+	}
+
 	@Override
 	public String toString() {
 		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );

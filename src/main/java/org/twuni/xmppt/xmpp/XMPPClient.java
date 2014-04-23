@@ -33,6 +33,8 @@ public class XMPPClient implements PacketListener {
 		public boolean connected;
 		public boolean authenticated;
 		public boolean bound;
+		public int sent;
+		public int received;
 		public String jid;
 
 		public State() {
@@ -44,6 +46,8 @@ public class XMPPClient implements PacketListener {
 			connected = false;
 			authenticated = false;
 			bound = false;
+			sent = 0;
+			received = 0;
 		}
 
 	}
@@ -59,8 +63,6 @@ public class XMPPClient implements PacketListener {
 	private final List<PacketListener> packetListeners = new ArrayList<PacketListener>();
 	private Thread reader;
 	private int openStreams = 0;
-	private int packetsSent;
-	private int packetsReceived;
 
 	public void waitForConnectionToDie() {
 		if( reader != null ) {
@@ -92,6 +94,9 @@ public class XMPPClient implements PacketListener {
 		this.username = username;
 		this.password = password;
 		this.resource = resource;
+	}
+
+	public void connect() throws IOException {
 		newStream();
 		state.connected = true;
 	}
@@ -114,8 +119,8 @@ public class XMPPClient implements PacketListener {
 		reader.start();
 		send( new Stream( serviceName ) );
 		openStreams++;
-		packetsSent = 0;
-		packetsReceived = 0;
+		state.sent = 0;
+		state.received = 0;
 		if( oldReader != null ) {
 			oldReader.interrupt();
 			throw new XMLStreamResetException();
@@ -137,7 +142,7 @@ public class XMPPClient implements PacketListener {
 	private void respondTo( Object packet ) throws IOException {
 
 		if( available && !StreamManagement.is( packet ) ) {
-			packetsReceived++;
+			state.received++;
 		}
 
 		if( packet instanceof Features ) {
@@ -166,15 +171,15 @@ public class XMPPClient implements PacketListener {
 
 	protected void onAcknowledgmentRequest( AcknowledgmentRequest acknowledgmentRequest ) {
 		try {
-			send( new Acknowledgment( packetsReceived ) );
+			send( new Acknowledgment( state.received ) );
 		} catch( IOException exception ) {
 			onPacketException( exception );
 		}
 	}
 
 	protected void onAcknowledgment( Acknowledgment acknowledgment ) {
-		if( acknowledgment.getH() != packetsSent ) {
-			onPacketException( new IOException( String.format( "Expected [%d], was [%d]", Integer.valueOf( packetsSent ), Integer.valueOf( acknowledgment.getH() ) ) ) );
+		if( acknowledgment.getH() != state.sent ) {
+			onPacketException( new IOException( String.format( "Expected [%d], was [%d]", Integer.valueOf( state.sent ), Integer.valueOf( acknowledgment.getH() ) ) ) );
 		}
 	}
 
@@ -238,7 +243,7 @@ public class XMPPClient implements PacketListener {
 	public void send( Object packet ) throws IOException {
 		writer.write( packet );
 		if( available && !StreamManagement.is( packet ) ) {
-			packetsSent++;
+			state.sent++;
 		}
 		for( PacketListener packetListener : packetListeners ) {
 			packetListener.onPacketSent( packet );

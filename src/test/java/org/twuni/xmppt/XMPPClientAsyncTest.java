@@ -23,7 +23,7 @@ public class XMPPClientAsyncTest extends Assert {
 		SocketChannel channel = SocketChannel.open();
 
 		channel.configureBlocking( false );
-		channel.connect( new InetSocketAddress( "localhost", 5223 ) );
+		channel.connect( new InetSocketAddress( "localhost", 5222 ) );
 
 		boolean running = true;
 		Selector selector = channel.provider().openSelector();

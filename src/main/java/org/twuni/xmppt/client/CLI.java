@@ -2,32 +2,9 @@ package org.twuni.xmppt.client;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.security.SecureRandom;
 import java.util.Scanner;
 
-import javax.net.ssl.SSLContext;
-
 public class CLI implements Runnable {
-
-	public static Socket createSecureSocket( String host, int port ) throws IOException {
-
-		try {
-
-			SSLContext tls = SSLContext.getInstance( "TLSv1.2" );
-
-			try {
-				tls.getSocketFactory();
-			} catch( IllegalStateException exception ) {
-				tls.init( null, null, new SecureRandom() );
-			}
-
-			return tls.getSocketFactory().createSocket( host, port );
-
-		} catch( Throwable exception ) {
-			throw new IOException( exception );
-		}
-
-	}
 
 	public static void main( String [] args ) throws IOException {
 
@@ -66,7 +43,7 @@ public class CLI implements Runnable {
 
 		}
 
-		Socket socket = secure ? createSecureSocket( host, port ) : new Socket( host, port );
+		Socket socket = SocketFactory.createSocket( host, port, secure );
 		new Thread( new CLI( socket ) ).start();
 		byte [] buffer = new byte [32 * 1024];
 		while( socket.isConnected() && !socket.isInputShutdown() ) {

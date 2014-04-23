@@ -99,6 +99,10 @@ public class IQ {
 		return IQ.result( id, content );
 	}
 
+	public String type() {
+		return type;
+	}
+
 	public IQ result() {
 		return IQ.result( id, null );
 	}
