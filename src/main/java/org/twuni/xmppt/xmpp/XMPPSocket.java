@@ -93,6 +93,10 @@ public class XMPPSocket implements Closeable, Flushable {
 			return;
 		}
 
+		if( size >= inputBuffer.length ) {
+			// FIXME: There's probably more to read.
+		}
+
 		LOG.info( "RECV %s", new String( inputBuffer, 0, size ) );
 
 		List<XMLElement> elements = XML.parse( inputBuffer, 0, size );

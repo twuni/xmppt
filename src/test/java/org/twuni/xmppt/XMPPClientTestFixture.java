@@ -239,7 +239,7 @@ public class XMPPClientTestFixture extends Assert {
 
 		if( isFeatureAvailable( SASLMechanisms.class ) ) {
 
-			SASLMechanisms mechanisms = (SASLMechanisms) getFeatures().getFeature( SASLMechanisms.class );
+			SASLMechanisms mechanisms = getFeatures().getFeature( SASLMechanisms.class );
 
 			if( mechanisms.hasMechanism( SASLPlainAuthentication.MECHANISM ) ) {
 

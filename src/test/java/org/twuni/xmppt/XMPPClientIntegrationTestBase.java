@@ -41,6 +41,27 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	}
 
 	@Test
+	public void server_shouldAcknowledgeAllPacketsSent() throws IOException {
+
+		goOnline( "send-n-messages-expect-ack-n" );
+		assertFeatureAvailable( StreamManagement.class );
+
+		int n = 10;
+		for( int i = 0; i < n; i++ ) {
+			xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), String.format( "<body>This message is at index %d.</body>", Integer.valueOf( i ) ) ) );
+		}
+
+		for( int i = 0; i < n; i++ ) {
+			xmpp.nextPacket();// Ignore the messages we have sent.
+		}
+
+		assertPacketsReceived( n );
+
+		goOffline();
+
+	}
+
+	@Test
 	public void server_shouldIgnoreAcknowledgmentWithExpectedValue() throws IOException {
 		goOnline( "send-unsolicited-ack-0" );
 		assertFeatureAvailable( StreamManagement.class );
@@ -74,27 +95,6 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	}
 
 	@Test
-	public void server_shouldAcknowledgeAllPacketsSent() throws IOException {
-
-		goOnline( "send-n-messages-expect-ack-n" );
-		assertFeatureAvailable( StreamManagement.class );
-
-		int n = 10;
-		for( int i = 0; i < n; i++ ) {
-			xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), String.format( "<body>This message is at index %d.</body>", Integer.valueOf( i ) ) ) );
-		}
-
-		for( int i = 0; i < n; i++ ) {
-			xmpp.nextPacket();// Ignore the messages we have sent.
-		}
-
-		assertPacketsReceived( n );
-
-		goOffline();
-
-	}
-
-	@Test
 	public void server_shouldReportSinglePacketReceived_whenOnePacketHasBeenSent() throws IOException {
 
 		goOnline( "send-message-expect-ack-1" );
@@ -107,6 +107,15 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 		goOffline();
 
+	}
+
+	@Ignore( "This is currently known to fail." )
+	@Test
+	public void server_shouldResendDroppedMessage() throws IOException {
+		invokeDroppedMessage();
+		goOnline( "expect-resend-dropped-message" );
+		xmpp.next();
+		goOffline();
 	}
 
 	@Ignore( "This is currently known to fail." )
@@ -133,15 +142,6 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 		goOffline();
 
-	}
-
-	@Ignore( "This is currently known to fail." )
-	@Test
-	public void server_shouldResendDroppedMessage() throws IOException {
-		invokeDroppedMessage();
-		goOnline( "expect-resend-dropped-message" );
-		xmpp.next();
-		goOffline();
 	}
 
 }
