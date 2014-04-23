@@ -22,7 +22,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	@Test
 	public void server_shouldReportNoPacketsReceived_whenNoPacketsHaveBeenSent() throws IOException {
 		goOnline( "send-nothing-expect-ack-0" );
-		assertStreamManagement();
+		assertFeatureAvailable( StreamManagement.class );
 		assertPacketsReceived( 0 );
 		goOffline();
 	}
@@ -37,7 +37,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	public void server_shouldReportSinglePacketReceived_whenOnePacketHasBeenSent() throws IOException {
 
 		goOnline( "send-message-expect-ack-1" );
-		assertStreamManagement();
+		assertFeatureAvailable( StreamManagement.class );
 
 		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>Hello, world.</body>" ) );
 		xmpp.nextPacket();// Ignore this packet we have sent to ourselves.
@@ -70,14 +70,10 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		login( getUsername(), "iamnotvalid" );
 	}
 
-	protected void assertStreamManagement() {
-		assertTrue( "XEP-0198 support should have been included in the stream features provided by the server.", getFeatures().hasFeature( StreamManagement.class ) );
-	}
-
 	@Test
 	public void server_shouldIgnoreAcknowledgmentWithExpectedValue() throws IOException {
 		goOnline( "send-unsolicited-ack-0" );
-		assertStreamManagement();
+		assertFeatureAvailable( StreamManagement.class );
 		xmpp.write( new Acknowledgment( 0 ) );
 		goOffline();
 	}

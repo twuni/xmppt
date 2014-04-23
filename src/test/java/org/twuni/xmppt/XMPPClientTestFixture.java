@@ -165,7 +165,7 @@ public class XMPPClientTestFixture extends Assert {
 
 		String id = null;
 
-		if( getFeatures().hasFeature( Bind.class ) ) {
+		if( isFeatureAvailable( Bind.class ) ) {
 
 			id = generatePacketID();
 			xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, Bind.resource( resourceName ) ) );
@@ -180,7 +180,7 @@ public class XMPPClientTestFixture extends Assert {
 			fullJID = bind.jid();
 			assertNotNull( "Server failed to provide a bound JID.", fullJID );
 
-			if( getFeatures().hasFeature( Session.class ) ) {
+			if( isFeatureAvailable( Session.class ) ) {
 
 				id = generatePacketID();
 				xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, new Session() ) );
@@ -209,9 +209,17 @@ public class XMPPClientTestFixture extends Assert {
 		login( getUsername(), getPassword() );
 	}
 
+	protected void assertFeatureAvailable( Class<?> feature ) {
+		assertTrue( String.format( "Feature not available: %s", feature.getName() ), isFeatureAvailable( feature ) );
+	}
+
+	protected boolean isFeatureAvailable( Class<?> feature ) {
+		return getFeatures().hasFeature( feature );
+	}
+
 	protected void login( String username, String password ) throws IOException {
 
-		if( getFeatures().hasFeature( SASLMechanisms.class ) ) {
+		if( isFeatureAvailable( SASLMechanisms.class ) ) {
 
 			SASLMechanisms mechanisms = (SASLMechanisms) getFeatures().getFeature( SASLMechanisms.class );
 
