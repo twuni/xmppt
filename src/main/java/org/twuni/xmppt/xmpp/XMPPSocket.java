@@ -32,9 +32,11 @@ public class XMPPSocket implements Closeable, Flushable {
 	private static final Logger LOG = new Logger( XMPPSocket.class.getName() );
 	private static final XMLElementParser XML = new XMLElementParser();
 	private static final PacketTransformer TRANSFORMER = XMPPPacketConfiguration.getDefault();
+
 	private final Object guard = new Object();
 	private final Socket socket;
 	private final byte [] inputBuffer;
+
 	private Node head;
 
 	public XMPPSocket( String host, int port, boolean secure ) throws IOException {
@@ -90,7 +92,7 @@ public class XMPPSocket implements Closeable, Flushable {
 		if( size <= 0 ) {
 			return;
 		}
-		
+
 		LOG.info( "RECV %s", new String( inputBuffer, 0, size ) );
 
 		List<XMLElement> elements = XML.parse( inputBuffer, 0, size );

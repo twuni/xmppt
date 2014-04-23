@@ -3,7 +3,7 @@ package org.twuni.nio.server.auth;
 import org.twuni.Logger;
 
 public class AutomaticAuthenticator extends SimpleAuthenticator {
-	
+
 	private static final Logger LOG = new Logger( AutomaticAuthenticator.class.getName() );
 
 	@Override

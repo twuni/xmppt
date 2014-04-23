@@ -6,8 +6,9 @@ import org.twuni.xmppt.xml.XMLText;
 public class BaseValidator implements XMLStreamValidator {
 
 	@Override
-	public void onStartTag( XMLElement element ) {
-		// By default, do nothing.
+	public boolean isValid() {
+		// By default, do not assume the stream is valid.
+		return false;
 	}
 
 	@Override
@@ -16,14 +17,13 @@ public class BaseValidator implements XMLStreamValidator {
 	}
 
 	@Override
-	public void onText( XMLText text ) {
+	public void onStartTag( XMLElement element ) {
 		// By default, do nothing.
 	}
 
 	@Override
-	public boolean isValid() {
-		// By default, do not assume the stream is valid.
-		return false;
+	public void onText( XMLText text ) {
+		// By default, do nothing.
 	}
 
 }

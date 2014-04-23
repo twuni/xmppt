@@ -11,37 +11,14 @@ import org.junit.Test;
 
 public class XMLElementParserTest extends Assert {
 
-	@Test
-	public void parse_shouldParseSimpleElement() {
-		XMLElement expected = new XMLElement( "test" );
-		XMLElement actual = parse( "<test/>" );
-		assertEquals( expected.name, actual.name );
-	}
-
-	@Test
-	public void parse_shouldParseSimpleElementWithOneAttribute() {
-		Map<String, String> attributes = new HashMap<String, String>();
-		attributes.put( "a", "1" );
-		XMLElement expected = new XMLElement( "test", attributes );
-		XMLElement actual = parse( "<test a=\"1\"/>" );
-		assertEquals( expected.name, actual.name );
-		assertEquals( "1", expected.attribute( "a" ) );
-	}
-
 	private XMLElement parse( String in ) {
 		return new XMLElementParser().parse( in ).get( 0 );
 	}
 
 	@Test
-	public void parse_shouldParseSimpleElementWithTwoAttributes() {
-		Map<String, String> attributes = new HashMap<String, String>();
-		attributes.put( "a", "1" );
-		attributes.put( "z", "9" );
-		XMLElement expected = new XMLElement( "test", attributes );
-		XMLElement actual = parse( "<test z=\"9\" a=\"1\"/>" );
-		assertEquals( expected.name, actual.name );
-		assertEquals( expected.attribute( "a" ), actual.attribute( "a" ) );
-		assertEquals( expected.attribute( "z" ), actual.attribute( "z" ) );
+	public void parse_shouldDiscardTopLevelText() {
+		List<XMLElement> entities = new XMLElementParser().parse( "Ignore this." );
+		assertTrue( entities.isEmpty() );
 	}
 
 	@Test
@@ -61,9 +38,32 @@ public class XMLElementParserTest extends Assert {
 	}
 
 	@Test
-	public void parse_shouldDiscardTopLevelText() {
-		List<XMLElement> entities = new XMLElementParser().parse( "Ignore this." );
-		assertTrue( entities.isEmpty() );
+	public void parse_shouldParseSimpleElement() {
+		XMLElement expected = new XMLElement( "test" );
+		XMLElement actual = parse( "<test/>" );
+		assertEquals( expected.name, actual.name );
+	}
+
+	@Test
+	public void parse_shouldParseSimpleElementWithOneAttribute() {
+		Map<String, String> attributes = new HashMap<String, String>();
+		attributes.put( "a", "1" );
+		XMLElement expected = new XMLElement( "test", attributes );
+		XMLElement actual = parse( "<test a=\"1\"/>" );
+		assertEquals( expected.name, actual.name );
+		assertEquals( "1", expected.attribute( "a" ) );
+	}
+
+	@Test
+	public void parse_shouldParseSimpleElementWithTwoAttributes() {
+		Map<String, String> attributes = new HashMap<String, String>();
+		attributes.put( "a", "1" );
+		attributes.put( "z", "9" );
+		XMLElement expected = new XMLElement( "test", attributes );
+		XMLElement actual = parse( "<test z=\"9\" a=\"1\"/>" );
+		assertEquals( expected.name, actual.name );
+		assertEquals( expected.attribute( "a" ), actual.attribute( "a" ) );
+		assertEquals( expected.attribute( "z" ), actual.attribute( "z" ) );
 	}
 
 	@Test

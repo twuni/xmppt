@@ -10,20 +10,8 @@ public class ValidateEmptyTag extends BaseValidator {
 	private boolean ended;
 
 	@Override
-	public void onText( XMLText text ) {
-		Assert.fail( "#onText should not have been called." );
-	}
-
-	@Override
-	public void onStartTag( XMLElement element ) {
-
-		if( started || ended ) {
-			Assert.fail( "#onStartTag should only have been called once." );
-			return;
-		}
-
-		started = true;
-
+	public boolean isValid() {
+		return started && ended;
 	}
 
 	@Override
@@ -43,8 +31,20 @@ public class ValidateEmptyTag extends BaseValidator {
 	}
 
 	@Override
-	public boolean isValid() {
-		return started && ended;
+	public void onStartTag( XMLElement element ) {
+
+		if( started || ended ) {
+			Assert.fail( "#onStartTag should only have been called once." );
+			return;
+		}
+
+		started = true;
+
+	}
+
+	@Override
+	public void onText( XMLText text ) {
+		Assert.fail( "#onText should not have been called." );
 	}
 
 }

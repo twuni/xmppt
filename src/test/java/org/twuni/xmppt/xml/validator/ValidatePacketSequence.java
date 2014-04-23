@@ -12,12 +12,6 @@ public class ValidatePacketSequence implements XMPPPacketValidator {
 	}
 
 	@Override
-	public void onPacketReceived( Object packet ) {
-		Assert.assertEquals( packetTypes[index], packet.getClass() );
-		index++;
-	}
-
-	@Override
 	public boolean isValid() {
 		Assert.assertEquals( packetTypes.length, index );
 		return index == packetTypes.length;
@@ -26,6 +20,12 @@ public class ValidatePacketSequence implements XMPPPacketValidator {
 	@Override
 	public void onPacketException( Throwable exception ) {
 		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void onPacketReceived( Object packet ) {
+		Assert.assertEquals( packetTypes[index], packet.getClass() );
+		index++;
 	}
 
 	@Override

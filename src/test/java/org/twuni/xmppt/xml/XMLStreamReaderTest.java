@@ -18,23 +18,8 @@ import org.xmlpull.v1.XmlPullParserFactory;
 public class XMLStreamReaderTest extends Assert {
 
 	@Test
-	public void onStartTag_shouldNotHaveChildren() throws Exception {
-		test( "<test>Hello</test>", new ValidateOnStartTagHasNoChildren() );
-	}
-
-	@Test
-	public void onEndTag_shouldHaveChildren() throws Exception {
-		test( "<test>Hello</test>", new ValidateOnEndTagHasChildren() );
-	}
-
-	@Test
-	public void onStartTag_shouldHaveAttributes() throws Exception {
-		test( "<test a=\"123\"/>", new ValidateOnStartTagHasAttributes() );
-	}
-
-	@Test
-	public void onEndTag_shouldHaveAttributes() throws Exception {
-		test( "<test a=\"123\"/>", new ValidateOnEndTagHasAttributes() );
+	public void emptyTag_shouldTriggerAppropriateEvents() throws Exception {
+		test( "<test/>", new ValidateEmptyTag() );
 	}
 
 	@Test
@@ -43,8 +28,23 @@ public class XMLStreamReaderTest extends Assert {
 	}
 
 	@Test
-	public void emptyTag_shouldTriggerAppropriateEvents() throws Exception {
-		test( "<test/>", new ValidateEmptyTag() );
+	public void onEndTag_shouldHaveAttributes() throws Exception {
+		test( "<test a=\"123\"/>", new ValidateOnEndTagHasAttributes() );
+	}
+
+	@Test
+	public void onEndTag_shouldHaveChildren() throws Exception {
+		test( "<test>Hello</test>", new ValidateOnEndTagHasChildren() );
+	}
+
+	@Test
+	public void onEndTag_shouldHaveParentWhenGivenChild() throws Exception {
+		test( "<parent><child/></parent>", new ValidateOnEndTagChildHasParent() );
+	}
+
+	@Test
+	public void onStartTag_shouldHaveAttributes() throws Exception {
+		test( "<test a=\"123\"/>", new ValidateOnStartTagHasAttributes() );
 	}
 
 	@Test
@@ -53,8 +53,8 @@ public class XMLStreamReaderTest extends Assert {
 	}
 
 	@Test
-	public void onEndTag_shouldHaveParentWhenGivenChild() throws Exception {
-		test( "<parent><child/></parent>", new ValidateOnEndTagChildHasParent() );
+	public void onStartTag_shouldNotHaveChildren() throws Exception {
+		test( "<test>Hello</test>", new ValidateOnStartTagHasNoChildren() );
 	}
 
 	protected void test( String input, XMLStreamValidator validator ) throws Exception {

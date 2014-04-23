@@ -8,16 +8,16 @@ public class ValidateOnEndTagHasChildren extends BaseValidator {
 	private boolean hasChildren;
 
 	@Override
+	public boolean isValid() {
+		return hasChildren;
+	}
+
+	@Override
 	public void onEndTag( XMLElement element ) {
 		hasChildren = !element.children.isEmpty();
 		if( !hasChildren ) {
 			Assert.fail( "Children should be accessible from within #onEndTag" );
 		}
-	}
-
-	@Override
-	public boolean isValid() {
-		return hasChildren;
 	}
 
 }

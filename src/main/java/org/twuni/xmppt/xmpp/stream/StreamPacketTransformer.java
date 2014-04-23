@@ -2,6 +2,7 @@ package org.twuni.xmppt.xmpp.stream;
 
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xmpp.PacketTransformer;
+import org.twuni.xmppt.xmpp.core.Error;
 import org.twuni.xmppt.xmpp.core.Features;
 
 public class StreamPacketTransformer extends PacketTransformer {
@@ -24,7 +25,7 @@ public class StreamPacketTransformer extends PacketTransformer {
 			return Stream.from( element );
 		}
 
-		if( StreamError.is( element ) ) {
+		if( Error.is( element ) ) {
 			return StreamError.from( element );
 		}
 

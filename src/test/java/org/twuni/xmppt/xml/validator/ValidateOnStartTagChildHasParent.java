@@ -8,6 +8,11 @@ public class ValidateOnStartTagChildHasParent extends BaseValidator {
 	private boolean parentIsSet;
 
 	@Override
+	public boolean isValid() {
+		return parentIsSet;
+	}
+
+	@Override
 	public void onStartTag( XMLElement element ) {
 		if( element.name.equals( "child" ) ) {
 			if( element.parent == null || !element.parent.name.equals( "parent" ) ) {
@@ -16,11 +21,6 @@ public class ValidateOnStartTagChildHasParent extends BaseValidator {
 			}
 			parentIsSet = true;
 		}
-	}
-
-	@Override
-	public boolean isValid() {
-		return parentIsSet;
 	}
 
 }

@@ -10,7 +10,7 @@ import org.twuni.Logger;
 import org.twuni.xmppt.xmpp.core.Message;
 
 public class Transporter {
-	
+
 	private static final Logger LOG = new Logger( Transporter.class.getName() );
 
 	private final Map<String, Writable> targets = new HashMap<String, Writable>();

@@ -34,127 +34,18 @@ public class XMPPClientTestFixture extends Assert {
 
 	}
 
-	protected String getServiceName() {
-		return "example.com";
-	}
-
-	protected String getUsername() {
-		return "alice";
-	}
-
-	protected String getPassword() {
-		return "changeit";
-	}
-
-	protected String getResourceName() {
-		return "test";
-	}
-
-	protected String getHost() {
-		return "localhost";
-	}
-
-	protected int getPort() {
-		return 5222;
-	}
-
-	protected boolean isSecure() {
-		return false;
-	}
-
-	protected Features getFeatures() {
-		Context context = getContext();
-		return context != null ? context.features : null;
-	}
-
-	protected String getFullJID() {
-		return fullJID;
-	}
-
-	protected String getSimpleJID() {
-		return getFullJID().replaceAll( "/.+$", "" );
-	}
-
-	protected String generatePacketID() {
-		Context context = getContext();
-		return context != null ? context.nextID() : Long.toHexString( System.currentTimeMillis() );
-	}
-
-	private Stream getStream() {
-		Context context = getContext();
-		return context != null ? context.stream : null;
-	}
-
-	private Context getContext() {
-		return contexts.isEmpty() ? null : contexts.peek();
-	}
-
-	protected void goOffline() throws IOException {
-		logout();
-		disconnect();
-	}
-
-	protected void goOnline() throws IOException {
-		goOnline( getResourceName() );
-	}
-
-	protected void goOnline( String resourceName ) throws IOException {
-		connect();
-		login();
-		bind( resourceName );
-	}
-
 	private final Stack<Context> contexts = new Stack<Context>();
 	private String fullJID;
 	protected XMPPSocket xmpp;
 
-	protected void connect() throws IOException {
-		connect( getHost(), getPort(), isSecure(), getServiceName() );
+	protected void assertFeatureAvailable( Class<?> feature ) {
+		assertTrue( String.format( "Feature not available: %s", feature.getName() ), isFeatureAvailable( feature ) );
 	}
 
-	protected void connect( String host, int port, boolean secure, String serviceName ) throws IOException {
-
-		prepareConnect();
-
-		xmpp = new XMPPSocket( host, port, secure );
-
-		xmpp.write( new Stream( serviceName ) );
-
-		Context context = new Context();
-
-		context.stream = xmpp.nextPacket();
-
-		Object packet = xmpp.next();
-
-		if( packet instanceof StreamError ) {
-			throw new IOException( ( (StreamError) packet ).content.toString() );
-		}
-
-		if( packet instanceof Features ) {
-			context.features = (Features) packet;
-		}
-
-		contexts.push( context );
-
-		assertEquals( serviceName, context.stream.from() );
-
-	}
-
-	private void prepareConnect() throws IOException {
-		if( isConnected() ) {
-			if( isAuthenticated() ) {
-				logout();
-			}
-			disconnect();
-		}
-	}
-
-	protected boolean isConnected() {
-		return xmpp != null;
-	}
-
-	protected boolean isAuthenticated() {
-		return fullJID != null;
+	protected void assertPacketsReceived( int h ) throws IOException {
+		xmpp.write( new AcknowledgmentRequest() );
+		Acknowledgment acknowledgment = xmpp.nextPacket();
+		assertEquals( h, acknowledgment.getH() );
 	}
 
 	protected void bind() throws IOException {
@@ -205,16 +96,143 @@ public class XMPPClientTestFixture extends Assert {
 
 	}
 
-	protected void login() throws IOException {
-		login( getUsername(), getPassword() );
+	protected void connect() throws IOException {
+		connect( getHost(), getPort(), isSecure(), getServiceName() );
 	}
 
-	protected void assertFeatureAvailable( Class<?> feature ) {
-		assertTrue( String.format( "Feature not available: %s", feature.getName() ), isFeatureAvailable( feature ) );
+	protected void connect( String host, int port, boolean secure, String serviceName ) throws IOException {
+
+		prepareConnect();
+
+		xmpp = new XMPPSocket( host, port, secure );
+
+		xmpp.write( new Stream( serviceName ) );
+
+		Context context = new Context();
+
+		context.stream = xmpp.nextPacket();
+
+		Object packet = xmpp.next();
+
+		if( packet instanceof StreamError ) {
+			throw new IOException( ( (StreamError) packet ).content.toString() );
+		}
+
+		if( packet instanceof Features ) {
+			context.features = (Features) packet;
+		}
+
+		contexts.push( context );
+
+		assertEquals( serviceName, context.stream.from() );
+
+	}
+
+	protected void disconnect() throws IOException {
+
+		if( isAuthenticated() ) {
+			logout();
+		}
+
+		while( !contexts.isEmpty() ) {
+			if( xmpp != null ) {
+				xmpp.write( "</stream:stream>" );
+			}
+			contexts.pop();
+		}
+
+		if( xmpp != null ) {
+			xmpp.flush();
+			xmpp.close();
+			xmpp = null;
+		}
+
+	}
+
+	protected String generatePacketID() {
+		Context context = getContext();
+		return context != null ? context.nextID() : Long.toHexString( System.currentTimeMillis() );
+	}
+
+	private Context getContext() {
+		return contexts.isEmpty() ? null : contexts.peek();
+	}
+
+	protected Features getFeatures() {
+		Context context = getContext();
+		return context != null ? context.features : null;
+	}
+
+	protected String getFullJID() {
+		return fullJID;
+	}
+
+	protected String getHost() {
+		return "localhost";
+	}
+
+	protected String getPassword() {
+		return "changeit";
+	}
+
+	protected int getPort() {
+		return 5222;
+	}
+
+	protected String getResourceName() {
+		return "test";
+	}
+
+	protected String getServiceName() {
+		return "example.com";
+	}
+
+	protected String getSimpleJID() {
+		return getFullJID().replaceAll( "/.+$", "" );
+	}
+
+	private Stream getStream() {
+		Context context = getContext();
+		return context != null ? context.stream : null;
+	}
+
+	protected String getUsername() {
+		return "alice";
+	}
+
+	protected void goOffline() throws IOException {
+		logout();
+		disconnect();
+	}
+
+	protected void goOnline() throws IOException {
+		goOnline( getResourceName() );
+	}
+
+	protected void goOnline( String resourceName ) throws IOException {
+		connect();
+		login();
+		bind( resourceName );
+	}
+
+	protected boolean isAuthenticated() {
+		return fullJID != null;
+	}
+
+	protected boolean isConnected() {
+		return xmpp != null;
 	}
 
 	protected boolean isFeatureAvailable( Class<?> feature ) {
 		return getFeatures().hasFeature( feature );
+	}
+
+	protected boolean isSecure() {
+		return false;
+	}
+
+	protected void login() throws IOException {
+		login( getUsername(), getPassword() );
 	}
 
 	protected void login( String username, String password ) throws IOException {
@@ -255,12 +273,6 @@ public class XMPPClientTestFixture extends Assert {
 
 	}
 
-	protected void assertPacketsReceived( int h ) throws IOException {
-		xmpp.write( new AcknowledgmentRequest() );
-		Acknowledgment acknowledgment = xmpp.nextPacket();
-		assertEquals( h, acknowledgment.getH() );
-	}
-
 	protected void logout() throws IOException {
 		if( !contexts.isEmpty() ) {
 			xmpp.write( new Presence( generatePacketID(), Presence.Type.UNAVAILABLE ) );
@@ -270,25 +282,13 @@ public class XMPPClientTestFixture extends Assert {
 		fullJID = null;
 	}
 
-	protected void disconnect() throws IOException {
-
-		if( isAuthenticated() ) {
-			logout();
-		}
-
-		while( !contexts.isEmpty() ) {
-			if( xmpp != null ) {
-				xmpp.write( "</stream:stream>" );
+	private void prepareConnect() throws IOException {
+		if( isConnected() ) {
+			if( isAuthenticated() ) {
+				logout();
 			}
-			contexts.pop();
+			disconnect();
 		}
-
-		if( xmpp != null ) {
-			xmpp.flush();
-			xmpp.close();
-			xmpp = null;
-		}
-
 	}
 
 }

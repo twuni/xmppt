@@ -10,12 +10,39 @@ import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixture {
 
-	@Ignore( "This is currently known to fail." )
+	@Test( expected = IOException.class )
+	public void connect_shouldProduceError_ifServiceNameUnknown() throws IOException {
+		connect( getHost(), getPort(), isSecure(), String.format( "%s-unknown", getServiceName() ) );
+	}
+
+	@Test( expected = IOException.class )
+	public void connect_shouldThrowException_whenNetworkErrorOccurs() throws IOException {
+		connect( "void.example.com", 4295, false, "localhost" );
+	}
+
+	protected void invokeDroppedMessage() throws IOException {
+		goOnline( "drop-message-on-purpose" );
+		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>This message was dropped.</body>" ) );
+		goOffline();
+	}
+
+	@Test( expected = IOException.class )
+	public void login_shouldProduceError_ifPasswordNotAccepted() throws IOException {
+		connect();
+		login( getUsername(), "iamnotvalid" );
+	}
+
+	@Test( expected = IOException.class )
+	public void login_shouldProduceError_ifUsernameUnknown() throws IOException {
+		connect();
+		login( "idonotexist", getPassword() );
+	}
+
 	@Test
-	public void server_shouldResendDroppedMessage() throws IOException {
-		invokeDroppedMessage();
-		goOnline( "expect-resend-dropped-message" );
-		xmpp.next();
+	public void server_shouldIgnoreAcknowledgmentWithExpectedValue() throws IOException {
+		goOnline( "send-unsolicited-ack-0" );
+		assertFeatureAvailable( StreamManagement.class );
+		xmpp.write( new Acknowledgment( 0 ) );
 		goOffline();
 	}
 
@@ -24,12 +51,6 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOnline( "send-nothing-expect-ack-0" );
 		assertFeatureAvailable( StreamManagement.class );
 		assertPacketsReceived( 0 );
-		goOffline();
-	}
-
-	protected void invokeDroppedMessage() throws IOException {
-		goOnline( "drop-message-on-purpose" );
-		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>This message was dropped.</body>" ) );
 		goOffline();
 	}
 
@@ -48,33 +69,12 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 	}
 
-	@Test( expected = IOException.class )
-	public void connect_shouldThrowException_whenNetworkErrorOccurs() throws IOException {
-		connect( "void.example.com", 4295, false, "localhost" );
-	}
-
-	@Test( expected = IOException.class )
-	public void connect_shouldProduceError_ifServiceNameUnknown() throws IOException {
-		connect( getHost(), getPort(), isSecure(), String.format( "%s-unknown", getServiceName() ) );
-	}
-
-	@Test( expected = IOException.class )
-	public void login_shouldProduceError_ifUsernameUnknown() throws IOException {
-		connect();
-		login( "idonotexist", getPassword() );
-	}
-
-	@Test( expected = IOException.class )
-	public void login_shouldProduceError_ifPasswordNotAccepted() throws IOException {
-		connect();
-		login( getUsername(), "iamnotvalid" );
-	}
-
+	@Ignore( "This is currently known to fail." )
 	@Test
-	public void server_shouldIgnoreAcknowledgmentWithExpectedValue() throws IOException {
-		goOnline( "send-unsolicited-ack-0" );
-		assertFeatureAvailable( StreamManagement.class );
-		xmpp.write( new Acknowledgment( 0 ) );
+	public void server_shouldResendDroppedMessage() throws IOException {
+		invokeDroppedMessage();
+		goOnline( "expect-resend-dropped-message" );
+		xmpp.next();
 		goOffline();
 	}
 
