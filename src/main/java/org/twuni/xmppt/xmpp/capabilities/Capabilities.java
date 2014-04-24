@@ -4,7 +4,7 @@ import org.twuni.xmppt.xml.XMLBuilder;
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xmpp.PacketTransformer;
 
-public class CapabilitiesQuery {
+public class Capabilities {
 
 	private static class ChildTransformer extends PacketTransformer {
 
@@ -43,18 +43,18 @@ public class CapabilitiesQuery {
 		return element.belongsTo( NAMESPACE ) && ELEMENT_NAME.equals( element.name );
 	}
 
-	public static CapabilitiesQuery from( XMLElement element ) {
-		return new CapabilitiesQuery( element.attribute( ATTRIBUTE_NODE ), CHILD_TRANSFORMER.transform( element.children ) );
+	public static Capabilities from( XMLElement element ) {
+		return new Capabilities( element.attribute( ATTRIBUTE_NODE ), CHILD_TRANSFORMER.transform( element.children ) );
 	}
 
 	private final String node;
 	private final Object [] content;
 
-	public CapabilitiesQuery( String node, String hash, Object... content ) {
+	public Capabilities( String node, String hash, Object... content ) {
 		this( String.format( "%s#%s", node, hash ), content );
 	}
 
-	public CapabilitiesQuery( String node, Object... content ) {
+	public Capabilities( String node, Object... content ) {
 		this.node = node;
 		this.content = content;
 	}

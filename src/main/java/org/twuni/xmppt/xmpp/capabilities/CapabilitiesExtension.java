@@ -38,8 +38,8 @@ public class CapabilitiesExtension extends PacketTransformer implements Extensio
 			return CapabilitiesHash.from( element );
 		}
 
-		if( CapabilitiesQuery.is( element ) ) {
-			return CapabilitiesQuery.from( element );
+		if( Capabilities.is( element ) ) {
+			return Capabilities.from( element );
 		}
 
 		return element;

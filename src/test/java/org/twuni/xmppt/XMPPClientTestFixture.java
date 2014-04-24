@@ -66,7 +66,7 @@ public class XMPPClientTestFixture extends Assert {
 			assertEquals( id, bindIQ.id() );
 			assertEquals( IQ.TYPE_RESULT, bindIQ.type() );
 
-			Bind bind = (Bind) bindIQ.getContent();
+			Bind bind = bindIQ.getContent( Bind.class );
 
 			fullJID = bind.jid();
 			assertNotNull( "Server failed to provide a bound JID.", fullJID );

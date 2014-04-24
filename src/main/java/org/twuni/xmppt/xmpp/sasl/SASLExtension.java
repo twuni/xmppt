@@ -5,9 +5,12 @@ import org.twuni.xmppt.xmpp.PacketTransformer;
 
 public class SASLExtension implements Extension {
 
+	private static final PacketTransformer PACKET = new SASLPacketTransformer();
+	private static final PacketTransformer FEATURE = new SASLFeature();
+
 	@Override
-	public PacketTransformer packet() {
-		return new SASLPacketTransformer();
+	public PacketTransformer feature() {
+		return FEATURE;
 	}
 
 	@Override
@@ -16,8 +19,8 @@ public class SASLExtension implements Extension {
 	}
 
 	@Override
-	public PacketTransformer feature() {
-		return new SASLFeature();
+	public PacketTransformer packet() {
+		return PACKET;
 	}
 
 	@Override

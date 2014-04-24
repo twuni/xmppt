@@ -7,6 +7,8 @@ import org.junit.Test;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Message;
+import org.twuni.xmppt.xmpp.ping.Ping;
+import org.twuni.xmppt.xmpp.push.Push;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
@@ -28,6 +30,23 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOffline();
 	}
 
+	@Ignore( "This is currently known to fail." )
+	@Test
+	public void iq_shouldIncrementReceivedPacketCountOnServer() throws IOException {
+
+		goOnline( "send-iq-expect-ack-1" );
+
+		// assertFeatureAvailable( Ping.class );
+
+		xmpp.write( new IQ( generatePacketID(), IQ.TYPE_SET, null, getStream().from(), new Ping() ) );
+		IQ iq = xmpp.nextPacket();// Ignore the response.
+
+		assertPacketsReceived( 1 );
+
+		goOffline();
+
+	}
+
 	@Test( expected = IOException.class )
 	public void login_shouldProduceError_ifPasswordNotAccepted() throws IOException {
 		connect();
@@ -38,6 +57,18 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	public void login_shouldProduceError_ifUsernameUnknown() throws IOException {
 		connect();
 		login( "idonotexist", getPassword() );
+	}
+
+	@Test
+	public void registerPushNotification_shouldBeSuccessful() throws IOException {
+		goOnline( "register-push" );
+		IQ sent = new IQ( generatePacketID(), IQ.TYPE_SET, null, getStream().from(), Push.register( "xmppt", "IGNORE_THIS" ) );
+		xmpp.write( sent );
+		IQ received = xmpp.nextPacket();
+		assertEquals( IQ.TYPE_RESULT, received.type() );
+		assertEquals( sent.id(), received.id() );
+		assertNotNull( received.getContent( Push.class ) );
+		goOffline();
 	}
 
 	@Test

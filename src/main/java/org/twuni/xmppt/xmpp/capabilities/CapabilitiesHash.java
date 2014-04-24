@@ -30,8 +30,8 @@ public class CapabilitiesHash {
 		this.hash = hash;
 	}
 
-	public CapabilitiesQuery query() {
-		return new CapabilitiesQuery( node, hash );
+	public Capabilities query() {
+		return new Capabilities( node, hash );
 	}
 
 	public String getHash() {
