@@ -111,10 +111,10 @@ public class IQ {
 	}
 
 	public IQ result() {
-		return IQ.result( id, null );
+		return result( id, (Object []) null );
 	}
 
-	public IQ result( Object content ) {
+	public IQ result( Object... content ) {
 		return IQ.result( id, content );
 	}
 

@@ -136,7 +136,11 @@ public class XMPPClientTestFixture extends Assert {
 
 		while( !contexts.isEmpty() ) {
 			if( xmpp != null ) {
-				xmpp.write( "</stream:stream>" );
+				try {
+					xmpp.write( "</stream:stream>" );
+				} catch( IOException exception ) {
+					// Socket must be closed. That's fine.
+				}
 			}
 			contexts.pop();
 		}

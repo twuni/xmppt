@@ -9,12 +9,12 @@ public class StreamError extends Error {
 		return new StreamError( element.content() );
 	}
 
-	public StreamError( Object content ) {
-		super( Stream.NAMESPACE, null, 0, content );
+	public StreamError() {
+		super( Stream.DEFAULT_PREFIX, Stream.NAMESPACE, null, 0, null );
 	}
 
-	public StreamError() {
-		super( Stream.NAMESPACE );
+	public StreamError( Object content ) {
+		super( Stream.DEFAULT_PREFIX, Stream.NAMESPACE, null, 0, content );
 	}
 
 }

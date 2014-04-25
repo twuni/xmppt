@@ -9,12 +9,13 @@ import java.net.Socket;
 import java.util.List;
 
 import org.twuni.Logger;
+import org.twuni.nio.server.Writable;
 import org.twuni.xmppt.client.SocketFactory;
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xml.XMLElementParser;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 
-public class XMPPSocket implements Closeable, Flushable {
+public class XMPPSocket implements Closeable, Flushable, Writable {
 
 	static class Node {
 
@@ -39,49 +40,28 @@ public class XMPPSocket implements Closeable, Flushable {
 
 	private Node head;
 
-	public XMPPSocket( String host, int port, boolean secure ) throws IOException {
-		this( SocketFactory.createSocket( host, port, secure ) );
-	}
-
-	public XMPPSocket( String host, int port ) throws IOException {
-		this( SocketFactory.createSocket( host, port ) );
-	}
-
 	public XMPPSocket( Socket socket ) {
 		this( socket, DEFAULT_INPUT_BUFFER_SIZE );
 	}
 
 	public XMPPSocket( Socket socket, int inputBufferSize ) {
 		this.socket = socket;
-		this.inputBuffer = new byte [inputBufferSize];
+		inputBuffer = new byte [inputBufferSize];
 	}
 
-	public void write( Object packet ) throws IOException {
-		OutputStream out = socket.getOutputStream();
-		String packetString = packet.toString();
-		LOG.info( "SEND %s", packetString );
-		byte [] buffer = packetString.getBytes();
-		out.write( buffer, 0, buffer.length );
+	public XMPPSocket( String host, int port ) throws IOException {
+		this( SocketFactory.createSocket( host, port ) );
 	}
 
-	public <T> T nextPacket() throws IOException {
-		return (T) next();
+	public XMPPSocket( String host, int port, boolean secure ) throws IOException {
+		this( SocketFactory.createSocket( host, port, secure ) );
 	}
 
-	public Object next() throws IOException {
-
-		if( head == null || head.data == null ) {
-			consumeNextBytes();
+	@Override
+	public void close() throws IOException {
+		synchronized( guard ) {
+			socket.close();
 		}
-
-		if( head != null && head.data != null ) {
-			Object packet = head.data;
-			head = head.next;
-			return packet;
-		}
-
-		return null;
-
 	}
 
 	private void consumeNextBytes() throws IOException {
@@ -138,11 +118,50 @@ public class XMPPSocket implements Closeable, Flushable {
 		}
 	}
 
-	@Override
-	public void close() throws IOException {
-		synchronized( guard ) {
-			socket.close();
+	public Object next() throws IOException {
+
+		if( head == null || head.data == null ) {
+			consumeNextBytes();
 		}
+
+		if( head != null && head.data != null ) {
+			Object packet = head.data;
+			head = head.next;
+			return packet;
+		}
+
+		return null;
+
+	}
+
+	public <T> T nextPacket() throws IOException {
+		return (T) next();
+	}
+
+	@Override
+	public int write( byte [] buffer ) {
+		return write( buffer, 0, buffer.length );
+	}
+
+	@Override
+	public int write( byte [] buffer, int offset, int length ) {
+		if( socket.isClosed() || !socket.isConnected() || socket.isOutputShutdown() ) {
+			return -1;
+		}
+		try {
+			socket.getOutputStream().write( buffer, offset, length );
+			return length;
+		} catch( IOException exception ) {
+			return -1;
+		}
+	}
+
+	public void write( Object packet ) throws IOException {
+		OutputStream out = socket.getOutputStream();
+		String packetString = packet.toString();
+		LOG.info( "SEND %s", packetString );
+		byte [] buffer = packetString.getBytes();
+		out.write( buffer, 0, buffer.length );
 	}
 
 }

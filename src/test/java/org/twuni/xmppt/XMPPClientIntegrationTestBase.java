@@ -30,7 +30,6 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOffline();
 	}
 
-	@Ignore( "This is currently known to fail." )
 	@Test
 	public void iq_shouldIncrementReceivedPacketCountOnServer() throws IOException {
 
@@ -49,6 +48,8 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 	@Test( expected = IOException.class )
 	public void login_shouldProduceError_ifPasswordNotAccepted() throws IOException {
+		goOnline( "minimal-connection-flow" );
+		goOffline();
 		connect();
 		login( getUsername(), "iamnotvalid" );
 	}
@@ -100,7 +101,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOffline();
 	}
 
-	@Ignore( "This, for now, is just an exploratory test." )
+	@Ignore( "This is just an exploratory test." )
 	@Test
 	public void server_shouldReportCapabilities() throws IOException {
 
@@ -140,7 +141,6 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 	}
 
-	@Ignore( "This is currently known to fail." )
 	@Test
 	public void server_shouldResendDroppedMessage() throws IOException {
 		invokeDroppedMessage();
@@ -149,7 +149,6 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOffline();
 	}
 
-	@Ignore( "This is currently known to fail." )
 	@Test
 	public void server_shouldResendPacket_whenClientDoesNotAcknowledgeIt() throws IOException {
 

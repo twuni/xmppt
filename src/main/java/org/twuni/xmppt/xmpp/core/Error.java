@@ -8,12 +8,7 @@ public class Error {
 	public static final String ELEMENT_NAME = "error";
 	public static final String ATTRIBUTE_CODE = "code";
 	public static final String ATTRIBUTE_TYPE = "type";
-
 	public static final String TYPE_CANCEL = "cancel";
-
-	public static boolean is( XMLElement element ) {
-		return ELEMENT_NAME.equals( element.name );
-	}
 
 	public static Error from( XMLElement element ) {
 		String type = element.attribute( ATTRIBUTE_TYPE );
@@ -22,7 +17,12 @@ public class Error {
 		return new Error( namespace, type, codeString != null ? Integer.parseInt( codeString ) : 0, element.content() );
 	}
 
+	public static boolean is( XMLElement element ) {
+		return ELEMENT_NAME.equals( element.name );
+	}
+
 	public final String namespace;
+	public final String prefix;
 	public final String type;
 	public final int code;
 	public final Object content;
@@ -36,6 +36,11 @@ public class Error {
 	}
 
 	public Error( String namespace, String type, int code, Object content ) {
+		this( null, namespace, type, code, content );
+	}
+
+	public Error( String prefix, String namespace, String type, int code, Object content ) {
+		this.prefix = prefix;
 		this.namespace = namespace;
 		this.type = type;
 		this.code = code;
@@ -44,7 +49,7 @@ public class Error {
 
 	@Override
 	public String toString() {
-		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );
+		XMLBuilder xml = new XMLBuilder( prefix, ELEMENT_NAME );
 		xml.attribute( XMLElement.ATTRIBUTE_NAMESPACE, namespace );
 		xml.attribute( ATTRIBUTE_TYPE, type );
 		if( code != 0 ) {

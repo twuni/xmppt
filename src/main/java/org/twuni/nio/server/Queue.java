@@ -13,17 +13,34 @@ public class Queue implements Iterable<Object> {
 		this.id = id;
 	}
 
-	public String id() {
-		return id;
-	}
-
 	public void add( Object object ) {
 		items.add( object );
+	}
+
+	public void clear() {
+		items.clear();
+	}
+
+	public String id() {
+		return id;
 	}
 
 	@Override
 	public Iterator<Object> iterator() {
 		return items.iterator();
+	}
+
+	public int size() {
+		return items.size();
+	}
+
+	public void transfer( Queue target ) {
+		Iterator<Object> it = iterator();
+		while( it.hasNext() ) {
+			Object item = it.next();
+			target.add( item );
+			it.remove();
+		}
 	}
 
 }
