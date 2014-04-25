@@ -37,11 +37,25 @@ public class XMPPTestServer implements Runnable {
 		public String resource;
 		public String streamID;
 		public String serviceName;
+		public String sessionID;
+		public boolean available;
 		public int received;
 		public int sent;
 
 		public String fullJID() {
 			return String.format( "%s/%s", jid(), resource );
+		}
+
+		public boolean hasSession() {
+			return sessionID != null;
+		}
+
+		public boolean isAvailable() {
+			return available;
+		}
+
+		public boolean isBound() {
+			return resource != null;
 		}
 
 		public String jid() {
@@ -94,10 +108,22 @@ public class XMPPTestServer implements Runnable {
 			Presence presence = (Presence) packet;
 
 			if( presence.id() != null ) {
-				xmpp.received++;
+
+				if( xmpp.isAvailable() ) {
+					xmpp.received++;
+				}
+
+				if( presence.type() == null ) {
+					xmpp.socket.write( new Presence( presence.id(), xmpp.fullJID(), xmpp.fullJID() ) );
+					xmpp.available = true;
+					transporter.available( xmpp.socket, xmpp.jid() );
+					processPacket( xmpp, new Acknowledgment( xmpp.sent ) );
+				}
+
 			}
 
 			if( Presence.Type.UNAVAILABLE.equals( presence.type() ) ) {
+				xmpp.available = false;
 				transporter.unavailable( xmpp.jid() );
 				xmpp.socket.close();
 				throw new EOFException();
@@ -108,14 +134,37 @@ public class XMPPTestServer implements Runnable {
 		}
 
 		if( packet instanceof IQ ) {
+
 			IQ iq = (IQ) packet;
-			if( iq.id() != null ) {
-				xmpp.received++;
+
+			if( xmpp.isAvailable() ) {
+
+				if( iq.id() != null ) {
+					xmpp.received++;
+				}
+
+				if( iq.expectsResult() ) {
+					xmpp.socket.write( iq.result( iq.getContent() ) );
+					xmpp.sent++;
+				}
+
+			} else {
+
+				Bind bind = iq.getContent( Bind.class );
+				Session session = iq.getContent( Session.class );
+
+				if( bind != null ) {
+					xmpp.resource = bind.resource();
+					xmpp.socket.write( iq.result( Bind.jid( xmpp.fullJID() ) ) );
+				}
+
+				if( session != null ) {
+					xmpp.sessionID = generateStreamID();
+					xmpp.socket.write( iq.result( iq.getContent() ) );
+				}
+
 			}
-			if( iq.expectsResult() ) {
-				xmpp.socket.write( iq.result( iq.getContent() ) );
-				xmpp.sent++;
-			}
+
 		}
 
 		if( packet instanceof Message ) {
@@ -147,6 +196,9 @@ public class XMPPTestServer implements Runnable {
 			return;
 		}
 
+		// TODO: Let's find out what our capabilities are, and let's compute the hash for real.
+		CapabilitiesHash capabilities = new CapabilitiesHash( serviceName, CapabilitiesHash.HASH_SHA1, "yKzHls8GRkBRR5a35o/IZmOtpBU=" );
+
 		while( running ) {
 
 			try {
@@ -171,8 +223,6 @@ public class XMPPTestServer implements Runnable {
 					continue;
 				}
 
-				CapabilitiesHash capabilities = new CapabilitiesHash( serviceName, CapabilitiesHash.HASH_SHA1, "yKzHls8GRkBRR5a35o/IZmOtpBU=" );
-
 				xmpp.socket.write( new Features( new SASLMechanisms( SASLPlainAuthentication.MECHANISM ), capabilities ) );
 
 				SASLPlainAuthentication credentials = xmpp.socket.nextPacket();
@@ -193,24 +243,16 @@ public class XMPPTestServer implements Runnable {
 				xmpp.streamID = generateStreamID();
 
 				xmpp.socket.write( new Stream( null, serviceName, xmpp.streamID ) );
+
+				if( !serviceName.equals( stream.to() ) ) {
+					xmpp.socket.write( new StreamError( "<host-unknown/>" ) );
+					xmpp.socket.close();
+					continue;
+				}
+
 				xmpp.socket.write( new Features( new Bind(), new Session(), new StreamManagement(), capabilities ) );
 
-				IQ bind = xmpp.socket.nextPacket();
-				xmpp.resource = bind.getContent( Bind.class ).resource();
-
-				xmpp.socket.write( bind.result( Bind.jid( xmpp.fullJID() ) ) );
-
-				IQ session = xmpp.socket.nextPacket();
-				xmpp.socket.write( session.result( new Session() ) );
-
-				Presence presence = xmpp.socket.nextPacket();
-
-				xmpp.socket.write( new Presence( presence.id(), xmpp.fullJID(), xmpp.fullJID() ) );
-				transporter.available( xmpp.socket, xmpp.jid() );
-
-				processPacket( xmpp, new Acknowledgment( 0 ) );
-
-				while( true ) {
+				while( running ) {
 					processPacket( xmpp, xmpp.socket.next() );
 				}
 
