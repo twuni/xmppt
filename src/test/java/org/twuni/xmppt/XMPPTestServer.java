@@ -24,6 +24,8 @@ import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
 import org.twuni.xmppt.xmpp.session.Session;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
+import org.twuni.xmppt.xmpp.stream.Enable;
+import org.twuni.xmppt.xmpp.stream.Enabled;
 import org.twuni.xmppt.xmpp.stream.Stream;
 import org.twuni.xmppt.xmpp.stream.StreamError;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
@@ -39,6 +41,7 @@ public class XMPPTestServer implements Runnable {
 		public String serviceName;
 		public String sessionID;
 		public boolean available;
+		public boolean streamManagementEnabled;
 		public int received;
 		public int sent;
 
@@ -58,8 +61,21 @@ public class XMPPTestServer implements Runnable {
 			return resource != null;
 		}
 
+		public boolean isStreamManagementEnabled() {
+			return streamManagementEnabled;
+		}
+
 		public String jid() {
 			return String.format( "%s@%s", username, serviceName );
+		}
+
+		public void send( Object packet ) throws IOException {
+			if( isStreamManagementEnabled() ) {
+				if( !StreamManagement.is( packet ) ) {
+					sent++;
+				}
+			}
+			socket.write( packet );
 		}
 
 	}
@@ -103,21 +119,23 @@ public class XMPPTestServer implements Runnable {
 
 	protected void processPacket( XMPPClientState xmpp, Object packet ) throws IOException {
 
+		if( xmpp.isStreamManagementEnabled() ) {
+			if( !StreamManagement.is( packet ) ) {
+				xmpp.received++;
+			}
+		}
+
 		if( packet instanceof Presence ) {
 
 			Presence presence = (Presence) packet;
 
 			if( presence.id() != null ) {
 
-				if( xmpp.isAvailable() ) {
-					xmpp.received++;
-				}
-
 				if( presence.type() == null ) {
-					xmpp.socket.write( new Presence( presence.id(), xmpp.fullJID(), xmpp.fullJID() ) );
 					xmpp.available = true;
+					xmpp.send( new Presence( presence.id(), xmpp.jid(), xmpp.fullJID() ) );
 					transporter.available( xmpp.socket, xmpp.jid() );
-					processPacket( xmpp, new Acknowledgment( xmpp.sent ) );
+					transporter.acknowledge( xmpp.jid(), xmpp.sent );
 				}
 
 			}
@@ -139,13 +157,8 @@ public class XMPPTestServer implements Runnable {
 
 			if( xmpp.isAvailable() ) {
 
-				if( iq.id() != null ) {
-					xmpp.received++;
-				}
-
 				if( iq.expectsResult() ) {
-					xmpp.socket.write( iq.result( iq.getContent() ) );
-					xmpp.sent++;
+					transporter.transport( iq.result( iq.getContent() ), xmpp.jid() );
 				}
 
 			} else {
@@ -155,12 +168,12 @@ public class XMPPTestServer implements Runnable {
 
 				if( bind != null ) {
 					xmpp.resource = bind.resource();
-					xmpp.socket.write( iq.result( Bind.jid( xmpp.fullJID() ) ) );
+					xmpp.send( iq.result( Bind.jid( xmpp.fullJID() ) ) );
 				}
 
 				if( session != null ) {
 					xmpp.sessionID = generateStreamID();
-					xmpp.socket.write( iq.result( iq.getContent() ) );
+					xmpp.send( iq.result( iq.getContent() ) );
 				}
 
 			}
@@ -169,14 +182,20 @@ public class XMPPTestServer implements Runnable {
 
 		if( packet instanceof Message ) {
 			Message message = (Message) packet;
-			if( message.id() != null ) {
-				xmpp.received++;
-			}
-			transporter.transport( new Message( message.id(), message.type(), xmpp.jid(), xmpp.jid(), message.getContent() ) );
+			transporter.transport( message.from( xmpp.jid() ), message.to() );
+		}
+
+		if( packet instanceof Enable ) {
+			xmpp.send( new Enabled() );
+			xmpp.streamManagementEnabled = true;
+		}
+
+		if( packet instanceof Enabled ) {
+			xmpp.streamManagementEnabled = true;
 		}
 
 		if( packet instanceof AcknowledgmentRequest ) {
-			xmpp.socket.write( new Acknowledgment( xmpp.received ) );
+			xmpp.send( new Acknowledgment( xmpp.received ) );
 		}
 
 		if( packet instanceof Acknowledgment ) {
@@ -208,6 +227,7 @@ public class XMPPTestServer implements Runnable {
 				xmpp.serviceName = serviceName;
 
 				xmpp.socket = new XMPPSocket( acceptor.accept() );
+				xmpp.socket.setLogger( null );
 
 				Stream stream = null;
 
@@ -287,14 +307,16 @@ public class XMPPTestServer implements Runnable {
 
 	public void stopListening() {
 		running = false;
-		thread.interrupt();
 		stop();
-		try {
-			thread.join();
-		} catch( InterruptedException exception ) {
-			// Ignore.
+		if( thread != null ) {
+			thread.interrupt();
+			try {
+				thread.join();
+			} catch( InterruptedException exception ) {
+				// Ignore.
+			}
+			thread = null;
 		}
-		thread = null;
 	}
 
 }

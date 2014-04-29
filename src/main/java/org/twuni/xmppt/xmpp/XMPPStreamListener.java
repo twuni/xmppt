@@ -14,25 +14,37 @@ public class XMPPStreamListener implements XMLStreamListener {
 	private PacketListener packetListener;
 	private final List<PacketTransformer> packetTransformers = new ArrayList<PacketTransformer>();
 
-	public XMPPStreamListener( PacketTransformer... packetTransformers ) {
-		this( null, packetTransformers );
-	}
-
 	public XMPPStreamListener( PacketListener packetListener, PacketTransformer... packetTransformers ) {
 		this.packetListener = packetListener;
 		this.packetTransformers.addAll( Arrays.asList( packetTransformers ) );
 	}
 
-	public void setPacketListener( PacketListener packetListener ) {
-		this.packetListener = packetListener;
+	public XMPPStreamListener( PacketTransformer... packetTransformers ) {
+		this( null, packetTransformers );
 	}
 
 	public void addPacketTransformer( PacketTransformer packetTransformer ) {
 		packetTransformers.add( packetTransformer );
 	}
 
-	public void removePacketTransformer( PacketTransformer packetTransformer ) {
-		packetTransformers.remove( packetTransformer );
+	@Override
+	public void onEndTag( XMLElement element ) {
+
+		if( Stream.is( element ) ) {
+			// Ignore this and just let the stream terminate.
+			return;
+		}
+
+		for( PacketTransformer packetTransformer : packetTransformers ) {
+			if( packetTransformer.matches( element ) ) {
+				Object packet = packetTransformer.transform( element );
+				if( packet != null && !( packet instanceof XMLElement ) ) {
+					onPacketReceived( packet );
+					return;
+				}
+			}
+		}
+
 	}
 
 	protected void onPacketReceived( Object packet ) {
@@ -52,28 +64,16 @@ public class XMPPStreamListener implements XMLStreamListener {
 	}
 
 	@Override
-	public void onEndTag( XMLElement element ) {
-
-		if( Stream.is( element ) ) {
-			// Ignore this and just let the stream terminate.
-			return;
-		}
-
-		for( PacketTransformer packetTransformer : packetTransformers ) {
-			if( packetTransformer.matches( element ) ) {
-				Object packet = packetTransformer.transform( element );
-				if( packet != null ) {
-					onPacketReceived( packet );
-					return;
-				}
-			}
-		}
-
-	}
-
-	@Override
 	public void onText( XMLText text ) {
 		// TODO Auto-generated method stub
+	}
+
+	public void removePacketTransformer( PacketTransformer packetTransformer ) {
+		packetTransformers.remove( packetTransformer );
+	}
+
+	public void setPacketListener( PacketListener packetListener ) {
+		this.packetListener = packetListener;
 	}
 
 }

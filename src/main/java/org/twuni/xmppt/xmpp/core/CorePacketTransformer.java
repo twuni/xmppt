@@ -2,6 +2,7 @@ package org.twuni.xmppt.xmpp.core;
 
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xmpp.PacketTransformer;
+import org.twuni.xmppt.xmpp.stream.Stream;
 
 public class CorePacketTransformer extends PacketTransformer {
 
@@ -15,7 +16,7 @@ public class CorePacketTransformer extends PacketTransformer {
 
 	@Override
 	public boolean matches( XMLElement element ) {
-		return element.getNamespace() == null;
+		return element.getNamespace() == null || element.belongsTo( Stream.ROOT_NAMESPACE );
 	}
 
 	@Override

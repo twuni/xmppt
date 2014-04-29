@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Stack;
 
 import org.junit.Assert;
+import org.twuni.xmppt.xmpp.PacketListener;
 import org.twuni.xmppt.xmpp.XMPPSocket;
 import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.core.Features;
@@ -16,8 +17,11 @@ import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
 import org.twuni.xmppt.xmpp.session.Session;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
+import org.twuni.xmppt.xmpp.stream.Enable;
+import org.twuni.xmppt.xmpp.stream.Enabled;
 import org.twuni.xmppt.xmpp.stream.Stream;
 import org.twuni.xmppt.xmpp.stream.StreamError;
+import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public class XMPPClientTestFixture extends Assert {
 
@@ -26,6 +30,9 @@ public class XMPPClientTestFixture extends Assert {
 		public Stream stream;
 		public Features features;
 		public int sequence;
+		public int sent;
+		public int received;
+		public boolean streamManagementEnabled;
 
 		public String nextID() {
 			sequence++;
@@ -36,16 +43,47 @@ public class XMPPClientTestFixture extends Assert {
 
 	private final Stack<Context> contexts = new Stack<Context>();
 	private String fullJID;
-	protected XMPPSocket xmpp;
+	private XMPPSocket xmpp;
 
 	protected void assertFeatureAvailable( Class<?> feature ) {
 		assertTrue( String.format( "Feature not available: %s", feature.getName() ), isFeatureAvailable( feature ) );
 	}
 
 	protected void assertPacketsReceived( int h ) throws IOException {
-		xmpp.write( new AcknowledgmentRequest() );
-		Acknowledgment acknowledgment = xmpp.nextPacket();
-		assertEquals( h, acknowledgment.getH() );
+
+		send( new AcknowledgmentRequest() );
+
+		Acknowledgment ack = nextPacket( Acknowledgment.class, new PacketListener() {
+
+			@Override
+			public void onPacketException( Throwable exception ) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void onPacketReceived( Object packet ) {
+				if( packet instanceof AcknowledgmentRequest ) {
+					try {
+						send( new Acknowledgment( getContext().received ) );
+					} catch( IOException exception ) {
+						// Ignore.
+					}
+				}
+			}
+
+			@Override
+			public void onPacketSent( Object packet ) {
+				// TODO Auto-generated method stub
+			}
+
+		} );
+
+		assertEquals( h, ack.getH() );
+
+	}
+
+	protected void assertPacketsSentWereReceived() throws IOException {
+		assertPacketsReceived( getContext().sent );
 	}
 
 	protected void bind() throws IOException {
@@ -59,9 +97,9 @@ public class XMPPClientTestFixture extends Assert {
 		if( isFeatureAvailable( Bind.class ) ) {
 
 			id = generatePacketID();
-			xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, Bind.resource( resourceName ) ) );
+			send( new IQ( id, IQ.TYPE_SET, null, null, Bind.resource( resourceName ) ) );
 
-			IQ bindIQ = xmpp.nextPacket();
+			IQ bindIQ = nextPacket();
 
 			assertEquals( id, bindIQ.id() );
 			assertEquals( IQ.TYPE_RESULT, bindIQ.type() );
@@ -71,12 +109,14 @@ public class XMPPClientTestFixture extends Assert {
 			fullJID = bind.jid();
 			assertNotNull( "Server failed to provide a bound JID.", fullJID );
 
+			enableStreamManagement();
+
 			if( isFeatureAvailable( Session.class ) ) {
 
 				id = generatePacketID();
-				xmpp.write( new IQ( id, IQ.TYPE_SET, null, null, new Session() ) );
+				send( new IQ( id, IQ.TYPE_SET, null, null, new Session() ) );
 
-				IQ sessionIQ = xmpp.nextPacket();
+				IQ sessionIQ = nextPacket();
 
 				assertEquals( id, sessionIQ.id() );
 				assertEquals( IQ.TYPE_RESULT, sessionIQ.type() );
@@ -84,13 +124,11 @@ public class XMPPClientTestFixture extends Assert {
 			}
 
 			id = generatePacketID();
-			xmpp.write( new Presence( id ) );
+			send( new Presence( id ) );
 
-			Presence presence = xmpp.nextPacket();
+			Presence presence = nextPacket();
 
-			assertEquals( id, presence.id() );
-			assertEquals( fullJID, presence.from() );
-			assertEquals( fullJID, presence.to() );
+			assertEquals( fullJID.replaceAll( "^([^/]+)/.+$", "$1" ), presence.to() );
 
 		}
 
@@ -106,13 +144,13 @@ public class XMPPClientTestFixture extends Assert {
 
 		xmpp = new XMPPSocket( host, port, secure );
 
-		xmpp.write( new Stream( serviceName ) );
+		send( new Stream( serviceName ) );
 
 		Context context = new Context();
 
-		context.stream = xmpp.nextPacket();
+		context.stream = nextPacket();
 
-		Object packet = xmpp.next();
+		Object packet = next();
 
 		if( packet instanceof StreamError ) {
 			throw new IOException( ( (StreamError) packet ).content.toString() );
@@ -137,7 +175,7 @@ public class XMPPClientTestFixture extends Assert {
 		while( !contexts.isEmpty() ) {
 			if( xmpp != null ) {
 				try {
-					xmpp.write( "</stream:stream>" );
+					send( "</stream:stream>" );
 				} catch( IOException exception ) {
 					// Socket must be closed. That's fine.
 				}
@@ -151,6 +189,16 @@ public class XMPPClientTestFixture extends Assert {
 			xmpp = null;
 		}
 
+	}
+
+	protected void enableStreamManagement() throws IOException {
+		if( isFeatureAvailable( StreamManagement.class ) ) {
+			send( new Enable() );
+			Enabled enabled = nextPacket( Enabled.class );
+			getContext().streamManagementEnabled = true;
+			getContext().received = 0;
+			getContext().sent = 0;
+		}
 	}
 
 	protected String generatePacketID() {
@@ -181,6 +229,10 @@ public class XMPPClientTestFixture extends Assert {
 
 	protected int getPort() {
 		return 5222;
+	}
+
+	protected int getReceivedPacketCount() {
+		return getContext().received;
 	}
 
 	protected String getResourceName() {
@@ -247,9 +299,9 @@ public class XMPPClientTestFixture extends Assert {
 
 			if( mechanisms.hasMechanism( SASLPlainAuthentication.MECHANISM ) ) {
 
-				xmpp.write( new SASLPlainAuthentication( username, password ) );
+				send( new SASLPlainAuthentication( username, password ) );
 
-				Object result = xmpp.next();
+				Object result = next();
 
 				if( result instanceof SASLFailure ) {
 					throw new IOException( ( (SASLFailure) result ).reason );
@@ -258,12 +310,12 @@ public class XMPPClientTestFixture extends Assert {
 				if( result instanceof SASLSuccess ) {
 
 					String serviceName = getStream().from();
-					xmpp.write( new Stream( serviceName ) );
+					send( new Stream( serviceName ) );
 
 					Context context = new Context();
 
-					context.stream = xmpp.nextPacket();
-					context.features = xmpp.nextPacket();
+					context.stream = nextPacket();
+					context.features = nextPacket();
 
 					contexts.push( context );
 
@@ -279,11 +331,42 @@ public class XMPPClientTestFixture extends Assert {
 
 	protected void logout() throws IOException {
 		if( !contexts.isEmpty() ) {
-			xmpp.write( new Presence( generatePacketID(), Presence.Type.UNAVAILABLE ) );
-			xmpp.write( "</stream:stream>" );
+			send( new Presence( generatePacketID(), Presence.Type.UNAVAILABLE ) );
+			send( "</stream:stream>" );
 			contexts.pop();
 		}
 		fullJID = null;
+	}
+
+	protected Object next() throws IOException {
+		return ok( xmpp.next() );
+	}
+
+	protected <T> T nextPacket() throws IOException {
+		T packet = xmpp.nextPacket();
+		return ok( packet );
+	}
+
+	protected <T> T nextPacket( Class<T> type ) throws IOException {
+		return ok( xmpp.nextPacket( type ) );
+	}
+
+	protected <T> T nextPacket( Class<T> type, PacketListener until ) throws IOException {
+		return ok( xmpp.nextPacket( type, until ) );
+	}
+
+	private <T> T ok( T packet ) {
+		Context context = getContext();
+		if( context != null ) {
+			if( context.streamManagementEnabled ) {
+				if( isFeatureAvailable( StreamManagement.class ) ) {
+					if( !StreamManagement.is( packet ) ) {
+						context.received++;
+					}
+				}
+			}
+		}
+		return packet;
 	}
 
 	private void prepareConnect() throws IOException {
@@ -292,6 +375,20 @@ public class XMPPClientTestFixture extends Assert {
 				logout();
 			}
 			disconnect();
+		}
+	}
+
+	protected void send( Object packet ) throws IOException {
+		xmpp.write( packet );
+		Context context = getContext();
+		if( context != null ) {
+			if( context.streamManagementEnabled ) {
+				if( isFeatureAvailable( StreamManagement.class ) ) {
+					if( !StreamManagement.is( packet ) ) {
+						context.sent++;
+					}
+				}
+			}
 		}
 	}
 

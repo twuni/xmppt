@@ -26,7 +26,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 	protected void invokeDroppedMessage() throws IOException {
 		goOnline( "drop-message-on-purpose" );
-		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>This message was dropped.</body>" ) );
+		send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>This message was dropped.</body>" ) );
 		goOffline();
 	}
 
@@ -37,10 +37,10 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 		// assertFeatureAvailable( Ping.class );
 
-		xmpp.write( new IQ( generatePacketID(), IQ.TYPE_SET, null, getStream().from(), new Ping() ) );
-		IQ iq = xmpp.nextPacket();// Ignore the response.
+		send( new IQ( generatePacketID(), IQ.TYPE_SET, null, getStream().from(), new Ping() ) );
+		IQ iq = nextPacket( IQ.class );// Ignore the response.
 
-		assertPacketsReceived( 1 );
+		assertPacketsSentWereReceived();
 
 		goOffline();
 
@@ -64,8 +64,8 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	public void registerPushNotification_shouldBeSuccessful() throws IOException {
 		goOnline( "register-push" );
 		IQ sent = new IQ( generatePacketID(), IQ.TYPE_SET, null, getStream().from(), Push.register( "xmppt", "IGNORE_THIS" ) );
-		xmpp.write( sent );
-		IQ received = xmpp.nextPacket();
+		send( sent );
+		IQ received = nextPacket();
 		assertEquals( IQ.TYPE_RESULT, received.type() );
 		assertEquals( sent.id(), received.id() );
 		assertNotNull( received.getContent( Push.class ) );
@@ -76,18 +76,17 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	public void server_shouldAcknowledgeAllPacketsSent() throws IOException {
 
 		goOnline( "send-n-messages-expect-ack-n" );
-		assertFeatureAvailable( StreamManagement.class );
 
 		int n = 10;
 		for( int i = 0; i < n; i++ ) {
-			xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), String.format( "<body>This message is at index %d.</body>", Integer.valueOf( i ) ) ) );
+			send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), String.format( "<body>This message is at index %d.</body>", Integer.valueOf( i ) ) ) );
 		}
 
 		for( int i = 0; i < n; i++ ) {
-			xmpp.nextPacket();// Ignore the messages we have sent.
+			nextPacket();// Ignore the messages we have sent.
 		}
 
-		assertPacketsReceived( n );
+		assertPacketsSentWereReceived();
 
 		goOffline();
 
@@ -97,7 +96,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	public void server_shouldIgnoreAcknowledgmentWithExpectedValue() throws IOException {
 		goOnline( "send-unsolicited-ack-0" );
 		assertFeatureAvailable( StreamManagement.class );
-		xmpp.write( new Acknowledgment( 0 ) );
+		send( new Acknowledgment( 0 ) );
 		goOffline();
 	}
 
@@ -111,8 +110,8 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 		CapabilitiesHash capabilities = getFeatures().getFeature( CapabilitiesHash.class );
 
-		xmpp.write( new IQ( generatePacketID(), IQ.TYPE_GET, null, getStream().from(), capabilities.query() ) );
-		xmpp.nextPacket();
+		send( new IQ( generatePacketID(), IQ.TYPE_GET, null, getStream().from(), capabilities.query() ) );
+		nextPacket();
 
 		goOffline();
 
@@ -122,7 +121,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	public void server_shouldReportNoPacketsReceived_whenNoPacketsHaveBeenSent() throws IOException {
 		goOnline( "send-nothing-expect-ack-0" );
 		assertFeatureAvailable( StreamManagement.class );
-		assertPacketsReceived( 0 );
+		assertPacketsSentWereReceived();
 		goOffline();
 	}
 
@@ -132,10 +131,10 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOnline( "send-message-expect-ack-1" );
 		assertFeatureAvailable( StreamManagement.class );
 
-		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>Hello, world.</body>" ) );
-		xmpp.nextPacket();// Ignore this packet we have sent to ourselves.
+		send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>Hello, world.</body>" ) );
+		nextPacket();// Ignore this packet we have sent to ourselves.
 
-		assertPacketsReceived( 1 );
+		assertPacketsSentWereReceived();
 
 		goOffline();
 
@@ -145,7 +144,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	public void server_shouldResendDroppedMessage() throws IOException {
 		invokeDroppedMessage();
 		goOnline( "expect-resend-dropped-message" );
-		xmpp.next();
+		nextPacket( Message.class );
 		goOffline();
 	}
 
@@ -156,19 +155,23 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		assertFeatureAvailable( StreamManagement.class );
 
 		// Trigger a packet to get sent to us.
-		xmpp.write( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>Hello, world.</body>" ) );
+		send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>Hello, world.</body>" ) );
 
 		// The server will immediately echo this message back to us.
-		xmpp.nextPacket();
+		nextPacket();
 
-		// Tell the server we didn't receive the message.
-		xmpp.write( new Acknowledgment( 0 ) );
+		int count = 1;// getReceivedPacketCount();
 
-		// Expect the server to send the message again.
-		xmpp.nextPacket();
+		// Tell the server we received nothing.
+		send( new Acknowledgment( 0 ) );
+
+		// Expect the server to send it all again.
+		for( int i = 0; i < count; i++ ) {
+			next();
+		}
 
 		// Place nicely, and acknowledge receipt this time.
-		xmpp.write( new Acknowledgment( 1 ) );
+		send( new Acknowledgment( count ) );
 
 		goOffline();
 

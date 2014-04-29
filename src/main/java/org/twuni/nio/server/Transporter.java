@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.twuni.Logger;
-import org.twuni.xmppt.xmpp.core.Message;
 
 public class Transporter {
 
@@ -47,9 +46,8 @@ public class Transporter {
 		flush( id );
 	}
 
-	public void enqueue( Message message ) {
+	public void enqueue( Object packet, String recipient ) {
 
-		String recipient = message.to();
 		Queue queue = state.pendingSend.get( recipient );
 
 		if( queue == null ) {
@@ -61,7 +59,7 @@ public class Transporter {
 			state.pendingAcknowledgment.put( recipient, new Queue( recipient ) );
 		}
 
-		queue.add( message );
+		queue.add( packet );
 
 	}
 
@@ -74,17 +72,17 @@ public class Transporter {
 				synchronized( queue ) {
 					Iterator<Object> it = queue.iterator();
 					while( it.hasNext() ) {
-						Object message = it.next();
+						Object packet = it.next();
 						try {
-							send( target, message );
+							send( target, packet );
 							if( limbo != null ) {
-								limbo.add( message );
+								limbo.add( packet );
 							}
 							it.remove();
 						} catch( IOException exception ) {
-							LOG.info( "DELAY %s", message );
+							LOG.info( "DELAY %s", packet );
 						} catch( BufferOverflowException exception ) {
-							LOG.info( "DELAY %s", message );
+							LOG.info( "DELAY %s", packet );
 						}
 					}
 				}
@@ -111,9 +109,18 @@ public class Transporter {
 		}
 	}
 
-	public void transport( Message message ) {
-		enqueue( message );
-		flush( message.to() );
+	public void sent( Object packet, String recipient ) {
+		Queue queue = state.pendingAcknowledgment.get( recipient );
+		if( queue == null ) {
+			queue = new Queue( recipient );
+			state.pendingAcknowledgment.put( recipient, queue );
+		}
+		queue.add( packet );
+	}
+
+	public void transport( Object packet, String recipient ) {
+		enqueue( packet, recipient );
+		flush( recipient );
 	}
 
 	public void unavailable( String id ) {

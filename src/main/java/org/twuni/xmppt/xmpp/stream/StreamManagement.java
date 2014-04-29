@@ -45,6 +45,14 @@ public class StreamManagement implements Extension {
 				return AcknowledgmentRequest.from( element );
 			}
 
+			if( Enable.is( element ) ) {
+				return Enable.from( element );
+			}
+
+			if( Enabled.is( element ) ) {
+				return Enabled.from( element );
+			}
+
 			return element;
 
 		}
@@ -58,26 +66,16 @@ public class StreamManagement implements Extension {
 	private static final PacketTransformer PACKET = new Packet();
 	private static final StreamManagement INSTANCE = new StreamManagement();
 
-	public static boolean is( Object packet ) {
-		return packet instanceof Acknowledgment || packet instanceof AcknowledgmentRequest;
-	}
-
-	public static boolean is( XMLElement element ) {
-		return element.belongsTo( NAMESPACE );
-	}
-
 	public static StreamManagement from( XMLElement element ) {
 		return INSTANCE;
 	}
 
-	@Override
-	public PacketTransformer packet() {
-		return PACKET;
+	public static boolean is( Object packet ) {
+		return packet instanceof Acknowledgment || packet instanceof AcknowledgmentRequest || packet instanceof Enable || packet instanceof Enabled;
 	}
 
-	@Override
-	public PacketTransformer iq() {
-		return null;
+	public static boolean is( XMLElement element ) {
+		return element.belongsTo( NAMESPACE );
 	}
 
 	@Override
@@ -86,13 +84,23 @@ public class StreamManagement implements Extension {
 	}
 
 	@Override
-	public String toString() {
-		return new XMLBuilder( ELEMENT_NAME ).attribute( XMLElement.ATTRIBUTE_NAMESPACE, StreamManagement.NAMESPACE ).close();
+	public PacketTransformer iq() {
+		return null;
+	}
+
+	@Override
+	public PacketTransformer packet() {
+		return PACKET;
 	}
 
 	@Override
 	public PacketTransformer presence() {
 		return null;
+	}
+
+	@Override
+	public String toString() {
+		return new XMLBuilder( ELEMENT_NAME ).attribute( XMLElement.ATTRIBUTE_NAMESPACE, StreamManagement.NAMESPACE ).close();
 	}
 
 }

@@ -30,7 +30,7 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 
 	public static final int DEFAULT_INPUT_BUFFER_SIZE = 32 * 1024;
 
-	private static final Logger LOG = new Logger( XMPPSocket.class.getName() );
+	private static final Logger DEFAULT_LOGGER = new Logger( XMPPSocket.class.getName() );
 	private static final XMLElementParser XML = new XMLElementParser();
 	private static final PacketTransformer TRANSFORMER = XMPPPacketConfiguration.getDefault();
 
@@ -38,6 +38,7 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 	private final Socket socket;
 	private final byte [] inputBuffer;
 
+	private Logger logger = DEFAULT_LOGGER;
 	private Node head;
 
 	public XMPPSocket( Socket socket ) {
@@ -77,7 +78,9 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 			// FIXME: There's probably more to read.
 		}
 
-		LOG.info( "RECV %s", new String( inputBuffer, 0, size ) );
+		if( logger != null ) {
+			logger.info( "RECV %s", new String( inputBuffer, 0, size ) );
+		}
 
 		List<XMLElement> elements = XML.parse( inputBuffer, 0, size );
 
@@ -138,6 +141,25 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 		return (T) next();
 	}
 
+	public <T> T nextPacket( Class<T> type ) throws IOException {
+		return nextPacket( type, null );
+	}
+
+	public <T> T nextPacket( Class<T> type, PacketListener until ) throws IOException {
+		for( Object packet = next(); packet != null; packet = next() ) {
+			if( type.isInstance( packet ) ) {
+				return (T) packet;
+			} else if( until != null ) {
+				until.onPacketReceived( packet );
+			}
+		}
+		return null;
+	}
+
+	public void setLogger( Logger logger ) {
+		this.logger = logger;
+	}
+
 	@Override
 	public int write( byte [] buffer ) {
 		return write( buffer, 0, buffer.length );
@@ -159,7 +181,9 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 	public void write( Object packet ) throws IOException {
 		OutputStream out = socket.getOutputStream();
 		String packetString = packet.toString();
-		LOG.info( "SEND %s", packetString );
+		if( logger != null ) {
+			logger.info( "SEND %s", packetString );
+		}
 		byte [] buffer = packetString.getBytes();
 		out.write( buffer, 0, buffer.length );
 	}

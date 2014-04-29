@@ -10,12 +10,12 @@ public class SASLPlainAuthentication extends SASLAuthentication {
 
 	public static final String MECHANISM = "PLAIN";
 
-	public static boolean is( XMLElement element ) {
-		return SASLAuthentication.is( element ) && MECHANISM.equals( element.attributes.get( ATTRIBUTE_MECHANISM ) );
-	}
-
 	public static SASLPlainAuthentication from( XMLElement element ) {
 		return new SASLPlainAuthentication( element.children.iterator().next().toString() );
+	}
+
+	public static boolean is( XMLElement element ) {
+		return SASLAuthentication.is( element ) && MECHANISM.equals( element.attributes.get( ATTRIBUTE_MECHANISM ) );
 	}
 
 	private final String authz;
@@ -26,7 +26,7 @@ public class SASLPlainAuthentication extends SASLAuthentication {
 	public SASLPlainAuthentication( String base64content ) {
 
 		super( MECHANISM );
-		this.content = base64content;
+		content = base64content;
 
 		byte [] content = Base64.decodeBase64( base64content );
 
@@ -41,27 +41,17 @@ public class SASLPlainAuthentication extends SASLAuthentication {
 				}
 			}
 		}
+		a++;
+		b++;
 
-		authz = new String( content, 0, a );
-		authc = new String( content, a, b - a );
+		authz = new String( content, 0, a - 1 );
+		authc = new String( content, a, b - a - 1 );
 		password = new String( content, b, content.length - b );
 
 	}
 
 	public SASLPlainAuthentication( String identity, String password ) {
 		this( identity, identity, password );
-	}
-
-	public String getAuthenticationString() {
-		return authz;
-	}
-
-	public String getAuthorizationString() {
-		return authc;
-	}
-
-	public String getPassword() {
-		return password;
 	}
 
 	public SASLPlainAuthentication( String authz, String authc, String password ) {
@@ -90,9 +80,21 @@ public class SASLPlainAuthentication extends SASLAuthentication {
 
 	}
 
+	public String getAuthenticationString() {
+		return authz;
+	}
+
+	public String getAuthorizationString() {
+		return authc;
+	}
+
 	@Override
 	protected Object getContent() {
 		return content;
+	}
+
+	public String getPassword() {
+		return password;
 	}
 
 }

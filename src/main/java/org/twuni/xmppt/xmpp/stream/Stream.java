@@ -15,12 +15,14 @@ public class Stream {
 	public static final String DEFAULT_PREFIX = "stream";
 	public static final String DEFAULT_VERSION = "1.0";
 
-	public static boolean is( XMLElement element ) {
-		return ELEMENT_NAME.equals( element.name );
+	public static Stream from( XMLElement element ) {
+		// FIXME: If this element contains the entire stream, then what? Currently, we just ignore
+		// the children.
+		return new Stream( element.attributes.get( ATTRIBUTE_TO ), element.attributes.get( ATTRIBUTE_FROM ), element.attributes.get( ATTRIBUTE_ID ), DEFAULT_PREFIX, element.attributes.get( ATTRIBUTE_VERSION ) );
 	}
 
-	public static Stream from( XMLElement element ) {
-		return new Stream( element.attributes.get( ATTRIBUTE_TO ), element.attributes.get( ATTRIBUTE_FROM ), element.attributes.get( ATTRIBUTE_ID ), DEFAULT_PREFIX, element.attributes.get( ATTRIBUTE_VERSION ) );
+	public static boolean is( XMLElement element ) {
+		return ELEMENT_NAME.equals( element.name );
 	}
 
 	private final String prefix;
@@ -28,18 +30,6 @@ public class Stream {
 	private final String id;
 	private final String to;
 	private final String from;
-
-	public String to() {
-		return to;
-	}
-
-	public String from() {
-		return from;
-	}
-
-	public String id() {
-		return id;
-	}
 
 	public Stream() {
 		this( null );
@@ -69,6 +59,14 @@ public class Stream {
 		return new XMLBuilder( prefix, ELEMENT_NAME ).end();
 	}
 
+	public String from() {
+		return from;
+	}
+
+	public String id() {
+		return id;
+	}
+
 	public String open() {
 
 		XMLBuilder xml = new XMLBuilder( prefix, ELEMENT_NAME );
@@ -82,6 +80,10 @@ public class Stream {
 
 		return xml.leaveOpen();
 
+	}
+
+	public String to() {
+		return to;
 	}
 
 	@Override
