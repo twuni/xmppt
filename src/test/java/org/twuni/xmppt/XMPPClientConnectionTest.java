@@ -42,7 +42,7 @@ public class XMPPClientConnectionTest {
 
 		XMPPClientConnection connection = x.build();
 
-		connection.send( new Message( UUID.randomUUID().toString(), Message.TYPE_CHAT, "pinkman@im01.myfcci.com", "pinkman@im01.myfcci.com", new XMLBuilder( "body" ).content( "Hello, world!" ) ) );
+		connection.send( new Message( UUID.randomUUID().toString(), Message.TYPE_CHAT, "alice@localhost", "alice@localhost", new XMLBuilder( "body" ).content( "Hello, world!" ) ) );
 
 		try {
 			Thread.sleep( 2500 );
