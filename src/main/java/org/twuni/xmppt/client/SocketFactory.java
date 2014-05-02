@@ -8,7 +8,16 @@ import javax.net.ssl.SSLContext;
 
 public class SocketFactory {
 
-	public static Socket createSecureSocket( String host, int port ) throws IOException {
+	private static SocketFactory instance;
+
+	public static SocketFactory getInstance() {
+		if( instance == null ) {
+			instance = new SocketFactory();
+		}
+		return instance;
+	}
+
+	public Socket createSecureSocket( String host, int port ) throws IOException {
 
 		try {
 
@@ -28,11 +37,11 @@ public class SocketFactory {
 
 	}
 
-	public static Socket createSocket( String host, int port ) throws IOException {
+	public Socket createSocket( String host, int port ) throws IOException {
 		return new Socket( host, port );
 	}
 
-	public static Socket createSocket( String host, int port, boolean secure ) throws IOException {
+	public Socket createSocket( String host, int port, boolean secure ) throws IOException {
 		return secure ? createSecureSocket( host, port ) : createSocket( host, port );
 	}
 

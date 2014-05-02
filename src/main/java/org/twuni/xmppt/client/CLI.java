@@ -43,7 +43,7 @@ public class CLI implements Runnable {
 
 		}
 
-		Socket socket = SocketFactory.createSocket( host, port, secure );
+		Socket socket = SocketFactory.getInstance().createSocket( host, port, secure );
 		new Thread( new CLI( socket ) ).start();
 		byte [] buffer = new byte [32 * 1024];
 		while( socket.isConnected() && !socket.isInputShutdown() ) {
@@ -57,7 +57,7 @@ public class CLI implements Runnable {
 
 	}
 
-	private Socket socket;
+	private final Socket socket;
 
 	public CLI( Socket socket ) {
 		this.socket = socket;

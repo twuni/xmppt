@@ -50,12 +50,20 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 		inputBuffer = new byte [inputBufferSize];
 	}
 
+	public XMPPSocket( SocketFactory socketFactory, String host, int port ) throws IOException {
+		this( socketFactory.createSocket( host, port ) );
+	}
+
+	public XMPPSocket( SocketFactory socketFactory, String host, int port, boolean secure ) throws IOException {
+		this( socketFactory.createSocket( host, port, secure ) );
+	}
+
 	public XMPPSocket( String host, int port ) throws IOException {
-		this( SocketFactory.createSocket( host, port ) );
+		this( SocketFactory.getInstance(), host, port );
 	}
 
 	public XMPPSocket( String host, int port, boolean secure ) throws IOException {
-		this( SocketFactory.createSocket( host, port, secure ) );
+		this( SocketFactory.getInstance(), host, port, secure );
 	}
 
 	@Override

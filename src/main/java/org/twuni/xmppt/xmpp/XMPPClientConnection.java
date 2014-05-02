@@ -3,6 +3,7 @@ package org.twuni.xmppt.xmpp;
 import java.io.IOException;
 import java.util.Stack;
 
+import org.twuni.xmppt.client.SocketFactory;
 import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.core.Features;
 import org.twuni.xmppt.xmpp.core.IQ;
@@ -24,6 +25,7 @@ public class XMPPClientConnection {
 
 	public static class Builder {
 
+		private SocketFactory socketFactory = SocketFactory.getInstance();
 		private String host = "localhost";
 		private int port = 5222;
 		private boolean secure = false;
@@ -38,7 +40,7 @@ public class XMPPClientConnection {
 
 			XMPPClientConnection connection = new XMPPClientConnection();
 
-			connection.connect( host, port, secure, serviceName, log );
+			connection.connect( socketFactory, host, port, secure, serviceName, log );
 			connection.login( userName, password );
 			connection.bind( resourceName );
 			connection.startListening( packetListener );
@@ -84,6 +86,11 @@ public class XMPPClientConnection {
 
 		public Builder serviceName( String serviceName ) {
 			this.serviceName = serviceName;
+			return this;
+		}
+
+		public Builder socketFactory( SocketFactory socketFactory ) {
+			this.socketFactory = socketFactory;
 			return this;
 		}
 
@@ -163,15 +170,20 @@ public class XMPPClientConnection {
 
 	}
 
-	public void connect( String host, int port, boolean secure, String serviceName ) throws IOException {
-		connect( host, port, secure, serviceName, false );
+	public void connect( SocketFactory socketFactory, String host, int port, boolean secure ) throws IOException {
+		prepareConnect();
+		socket = new XMPPSocket( socketFactory, host, port, secure );
 	}
 
-	public void connect( String host, int port, boolean secure, String serviceName, boolean loggingEnabled ) throws IOException {
+	public void connect( SocketFactory socketFactory, String host, int port, boolean secure, String serviceName, boolean loggingEnabled ) throws IOException {
+		connect( socketFactory, host, port, secure );
+		if( !loggingEnabled ) {
+			socket.setLogger( null );
+		}
+		connect( serviceName );
+	}
 
-		prepareConnect();
-
-		socket = new XMPPSocket( host, port, secure );
+	private void connect( String serviceName ) throws IOException {
 
 		send( new Stream( serviceName ) );
 
@@ -192,6 +204,23 @@ public class XMPPClientConnection {
 
 		contexts.push( context );
 
+	}
+
+	public void connect( String host, int port, boolean secure ) throws IOException {
+		prepareConnect();
+		socket = new XMPPSocket( host, port, secure );
+	}
+
+	public void connect( String host, int port, boolean secure, String serviceName ) throws IOException {
+		connect( host, port, secure, serviceName, false );
+	}
+
+	public void connect( String host, int port, boolean secure, String serviceName, boolean loggingEnabled ) throws IOException {
+		connect( host, port, secure );
+		if( !loggingEnabled ) {
+			socket.setLogger( null );
+		}
+		connect( serviceName );
 	}
 
 	public void disconnect() throws IOException {
