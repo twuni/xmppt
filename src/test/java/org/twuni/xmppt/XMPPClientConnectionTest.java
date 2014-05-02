@@ -22,8 +22,8 @@ public class XMPPClientConnectionTest {
 		XMPPClientConnection.Builder x = new XMPPClientConnection.Builder();
 
 		x.log( true );
-		x.host( "localhost" ).port( 5222 ).secure( false ).serviceName( "im01.myfcci.com" );
-		x.userName( "pinkman" ).password( "Hy2DoMJh3qjxjdP1UhlYatggZVzQ5dkw" );
+		x.host( "localhost" ).port( 5222 ).secure( false ).serviceName( "localhost" );
+		x.userName( "alice" ).password( "p8ssw0rd." );
 		x.resourceName( "xmpp-client-connection-test" );
 
 		x.packetListener( new PacketListener() {
@@ -57,8 +57,8 @@ public class XMPPClientConnectionTest {
 	@Before
 	public void startTestServer() {
 		SimpleAuthenticator authenticator = new SimpleAuthenticator();
-		authenticator.setCredential( "pinkman", "Hy2DoMJh3qjxjdP1UhlYatggZVzQ5dkw" );
-		server = new XMPPTestServer( "im01.myfcci.com", authenticator, 5222, false );
+		authenticator.setCredential( "alice", "p8ssw0rd." );
+		server = new XMPPTestServer( "localhost", authenticator, 5222, false );
 		server.startListening();
 	}
 
