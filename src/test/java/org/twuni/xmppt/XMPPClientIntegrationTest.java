@@ -15,7 +15,6 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 
 	private XMPPTestServer server;
 	private ResourceBundle properties;
-
 	private Timer failsafe;
 
 	@Override
