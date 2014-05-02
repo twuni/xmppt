@@ -1,5 +1,7 @@
 package org.twuni.xmppt;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ResourceBundle;
 
 import org.junit.After;
@@ -41,6 +43,14 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 		return properties.getString( "user_name" );
 	}
 
+	private boolean isLocal() {
+		try {
+			return InetAddress.getByName( getHost() ).isLoopbackAddress();
+		} catch( UnknownHostException exception ) {
+			return false;
+		}
+	}
+
 	@Override
 	protected boolean isSecure() {
 		return Boolean.parseBoolean( properties.getString( "secure" ) );
@@ -49,16 +59,20 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 	@Before
 	public void startTestServer() {
 		properties = ResourceBundle.getBundle( getClass().getName() );
-		SimpleAuthenticator authenticator = new SimpleAuthenticator();
-		authenticator.setCredential( getUsername(), getPassword() );
-		server = new XMPPTestServer( getServiceName(), authenticator, getPort(), isSecure() );
-		server.startListening();
+		if( isLocal() ) {
+			SimpleAuthenticator authenticator = new SimpleAuthenticator();
+			authenticator.setCredential( getUsername(), getPassword() );
+			server = new XMPPTestServer( getServiceName(), authenticator, getPort(), isSecure() );
+			server.startListening();
+		}
 	}
 
 	@After
 	public void stopTestServer() {
-		server.stopListening();
-		server = null;
+		if( isLocal() ) {
+			server.stopListening();
+			server = null;
+		}
 	}
 
 }
