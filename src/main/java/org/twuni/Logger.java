@@ -2,6 +2,8 @@ package org.twuni;
 
 public class Logger {
 
+	public static final String FORMAT_LONG = "%1$s T/%2$d [%3$s] %4$s";
+
 	public static final String TAG_VERBOSE = "V";
 	public static final String TAG_DEBUG = "D";
 	public static final String TAG_INFO = "I";
@@ -15,7 +17,7 @@ public class Logger {
 	}
 
 	private String createLogMessage( String level, String format, Object... args ) {
-		return String.format( "%s T/%d [%s] %s", level, Long.valueOf( System.currentTimeMillis() ), getTag(), String.format( format, args ) );
+		return String.format( FORMAT_LONG, level, Long.valueOf( System.currentTimeMillis() ), getTag(), String.format( format, args ) );
 	}
 
 	public void debug( String format, Object... args ) {
