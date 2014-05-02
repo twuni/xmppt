@@ -128,7 +128,7 @@ public class XMPPClientTestFixture extends Assert {
 
 			Presence presence = nextPacket();
 
-			assertEquals( fullJID.replaceAll( "^([^/]+)/.+$", "$1" ), presence.to() );
+			assertEquals( fullJID, presence.to() );
 
 		}
 

@@ -140,6 +140,9 @@ public class XMPPTestServer implements Runnable {
 			}
 		}
 
+		String fullJID = xmpp.fullJID();
+		String jid = xmpp.jid();
+
 		if( packet instanceof Presence ) {
 
 			Presence presence = (Presence) packet;
@@ -148,16 +151,16 @@ public class XMPPTestServer implements Runnable {
 
 				if( presence.type() == null ) {
 					xmpp.available = true;
-					xmpp.send( new Presence( presence.id(), xmpp.jid(), xmpp.fullJID() ) );
-					transporter.available( xmpp.socket, xmpp.jid(), unacknowledged.get( xmpp.jid() ) );
-					sendUnacknowledgedMessages( xmpp.jid() );
+					xmpp.send( new Presence( presence.id(), fullJID, fullJID ) );
+					transporter.available( xmpp.socket, jid, unacknowledged.get( jid ) );
+					sendUnacknowledgedMessages( jid );
 				}
 
 			}
 
 			if( Presence.Type.UNAVAILABLE.equals( presence.type() ) ) {
 				xmpp.available = false;
-				transporter.unavailable( xmpp.jid() );
+				transporter.unavailable( jid );
 				xmpp.socket.close();
 				throw new EOFException();
 			}
@@ -173,7 +176,7 @@ public class XMPPTestServer implements Runnable {
 			if( xmpp.isAvailable() ) {
 
 				if( iq.expectsResult() ) {
-					transporter.transport( iq.result( iq.getContent() ), xmpp.jid(), unacknowledged.get( xmpp.jid() ) );
+					transporter.transport( iq.result( iq.getContent() ), jid, unacknowledged.get( jid ) );
 				}
 
 			} else {
@@ -183,7 +186,8 @@ public class XMPPTestServer implements Runnable {
 
 				if( bind != null ) {
 					xmpp.resource = bind.resource();
-					xmpp.send( iq.result( Bind.jid( xmpp.fullJID() ) ) );
+					fullJID = xmpp.fullJID();
+					xmpp.send( iq.result( Bind.jid( fullJID ) ) );
 				}
 
 				if( session != null ) {
@@ -197,18 +201,18 @@ public class XMPPTestServer implements Runnable {
 
 		if( packet instanceof Message ) {
 			Message message = (Message) packet;
-			transporter.transport( message.from( xmpp.jid() ), message.to(), unacknowledged.get( xmpp.jid() ) );
+			transporter.transport( message.from( jid ), message.to(), unacknowledged.get( jid ) );
 		}
 
 		if( packet instanceof Enable ) {
 			xmpp.send( new Enabled() );
 			xmpp.streamManagementEnabled = true;
-			getOrCreateUnacknowledgedPacketQueue( xmpp.jid() );
+			getOrCreateUnacknowledgedPacketQueue( jid );
 		}
 
 		if( packet instanceof Enabled ) {
 			xmpp.streamManagementEnabled = true;
-			getOrCreateUnacknowledgedPacketQueue( xmpp.jid() );
+			getOrCreateUnacknowledgedPacketQueue( jid );
 		}
 
 		if( packet instanceof AcknowledgmentRequest ) {
@@ -217,10 +221,10 @@ public class XMPPTestServer implements Runnable {
 
 		if( packet instanceof Acknowledgment ) {
 			Acknowledgment acknowledgment = (Acknowledgment) packet;
-			if( acknowledgment.getH() == getOrCreateUnacknowledgedPacketQueue( xmpp.jid() ).getOffset() ) {
+			if( acknowledgment.getH() == getOrCreateUnacknowledgedPacketQueue( jid ).getOffset() ) {
 				unacknowledged.clear();
 			} else {
-				sendUnacknowledgedMessages( xmpp.jid() );
+				sendUnacknowledgedMessages( jid );
 			}
 		}
 
