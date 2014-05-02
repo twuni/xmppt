@@ -3,9 +3,13 @@ package org.twuni.xmppt;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import javax.net.ssl.SSLServerSocketFactory;
 
+import org.twuni.nio.server.Queue;
 import org.twuni.nio.server.Transporter;
 import org.twuni.nio.server.auth.AuthenticationException;
 import org.twuni.nio.server.auth.Authenticator;
@@ -89,6 +93,8 @@ public class XMPPTestServer implements Runnable {
 	private final boolean secure;
 	private ServerSocket acceptor;
 
+	private final Map<String, Queue> unacknowledged = new HashMap<String, Queue>();
+
 	public XMPPTestServer( String serviceName ) {
 		this( serviceName, new AutomaticAuthenticator() );
 	}
@@ -113,6 +119,15 @@ public class XMPPTestServer implements Runnable {
 		return Long.toHexString( System.currentTimeMillis() );
 	}
 
+	private Queue getOrCreateUnacknowledgedPacketQueue( String jid ) {
+		Queue q = unacknowledged.get( jid );
+		if( q == null ) {
+			q = new Queue( jid );
+			unacknowledged.put( q.id(), q );
+		}
+		return q;
+	}
+
 	public boolean isRunning() {
 		return running && thread != null && thread.isAlive();
 	}
@@ -134,8 +149,8 @@ public class XMPPTestServer implements Runnable {
 				if( presence.type() == null ) {
 					xmpp.available = true;
 					xmpp.send( new Presence( presence.id(), xmpp.jid(), xmpp.fullJID() ) );
-					transporter.available( xmpp.socket, xmpp.jid() );
-					transporter.acknowledge( xmpp.jid(), xmpp.sent );
+					transporter.available( xmpp.socket, xmpp.jid(), unacknowledged.get( xmpp.jid() ) );
+					sendUnacknowledgedMessages( xmpp.jid() );
 				}
 
 			}
@@ -158,7 +173,7 @@ public class XMPPTestServer implements Runnable {
 			if( xmpp.isAvailable() ) {
 
 				if( iq.expectsResult() ) {
-					transporter.transport( iq.result( iq.getContent() ), xmpp.jid() );
+					transporter.transport( iq.result( iq.getContent() ), xmpp.jid(), unacknowledged.get( xmpp.jid() ) );
 				}
 
 			} else {
@@ -182,16 +197,18 @@ public class XMPPTestServer implements Runnable {
 
 		if( packet instanceof Message ) {
 			Message message = (Message) packet;
-			transporter.transport( message.from( xmpp.jid() ), message.to() );
+			transporter.transport( message.from( xmpp.jid() ), message.to(), unacknowledged.get( xmpp.jid() ) );
 		}
 
 		if( packet instanceof Enable ) {
 			xmpp.send( new Enabled() );
 			xmpp.streamManagementEnabled = true;
+			getOrCreateUnacknowledgedPacketQueue( xmpp.jid() );
 		}
 
 		if( packet instanceof Enabled ) {
 			xmpp.streamManagementEnabled = true;
+			getOrCreateUnacknowledgedPacketQueue( xmpp.jid() );
 		}
 
 		if( packet instanceof AcknowledgmentRequest ) {
@@ -200,7 +217,11 @@ public class XMPPTestServer implements Runnable {
 
 		if( packet instanceof Acknowledgment ) {
 			Acknowledgment acknowledgment = (Acknowledgment) packet;
-			transporter.acknowledge( xmpp.jid(), acknowledgment.getH() );
+			if( acknowledgment.getH() == getOrCreateUnacknowledgedPacketQueue( xmpp.jid() ).getOffset() ) {
+				unacknowledged.clear();
+			} else {
+				sendUnacknowledgedMessages( xmpp.jid() );
+			}
 		}
 
 	}
@@ -284,6 +305,16 @@ public class XMPPTestServer implements Runnable {
 
 		stop();
 
+	}
+
+	private void sendUnacknowledgedMessages( String jid ) {
+		Queue q = unacknowledged.get( jid );
+		if( q != null ) {
+			Iterator<Object> it = q.iterator();
+			while( it.hasNext() ) {
+				transporter.transport( it.next(), jid );
+			}
+		}
 	}
 
 	public void startListening() {

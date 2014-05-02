@@ -21,7 +21,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 	@Test( expected = IOException.class )
 	public void connect_shouldThrowException_whenNetworkErrorOccurs() throws IOException {
-		connect( "void.example.com", 4295, false, "localhost" );
+		connect( "localhost", 4295, false, "localhost" );
 	}
 
 	protected void invokeDroppedMessage() throws IOException {

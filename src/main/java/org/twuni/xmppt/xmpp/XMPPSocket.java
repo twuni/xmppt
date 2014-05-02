@@ -121,6 +121,18 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 		}
 	}
 
+	public boolean hasNext() {
+		return isConnected() && !socket.isInputShutdown();
+	}
+
+	public boolean isConnected() {
+		return socket != null && socket.isConnected();
+	}
+
+	public boolean isWritable() {
+		return isConnected() && !socket.isOutputShutdown();
+	}
+
 	public Object next() throws IOException {
 
 		if( head == null || head.data == null ) {

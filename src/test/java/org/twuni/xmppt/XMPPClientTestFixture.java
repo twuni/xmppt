@@ -175,7 +175,7 @@ public class XMPPClientTestFixture extends Assert {
 		while( !contexts.isEmpty() ) {
 			if( xmpp != null ) {
 				try {
-					send( "</stream:stream>" );
+					send( getStream().close() );
 				} catch( IOException exception ) {
 					// Socket must be closed. That's fine.
 				}
@@ -332,7 +332,7 @@ public class XMPPClientTestFixture extends Assert {
 	protected void logout() throws IOException {
 		if( !contexts.isEmpty() ) {
 			send( new Presence( generatePacketID(), Presence.Type.UNAVAILABLE ) );
-			send( "</stream:stream>" );
+			send( getStream().close() );
 			contexts.pop();
 		}
 		fullJID = null;
