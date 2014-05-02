@@ -6,9 +6,11 @@ import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.twuni.Logger;
 import org.twuni.nio.server.auth.SimpleAuthenticator;
 import org.twuni.xmppt.xml.XMLBuilder;
 import org.twuni.xmppt.xmpp.XMPPClientConnection;
+import org.twuni.xmppt.xmpp.XMPPClientConnection.ConnectionListener;
 import org.twuni.xmppt.xmpp.XMPPClientConnection.PacketListener;
 import org.twuni.xmppt.xmpp.core.Message;
 
@@ -26,7 +28,25 @@ public class XMPPClientConnectionTest {
 		x.userName( "alice" ).password( "p8ssw0rd." );
 		x.resourceName( "xmpp-client-connection-test" );
 
+		x.connectionListener( new ConnectionListener() {
+
+			private final Logger log = new Logger( ConnectionListener.class.getName() );
+
+			@Override
+			public void onConnected( XMPPClientConnection connection ) {
+				log.info( "CONNECTED" );
+			}
+
+			@Override
+			public void onDisconnected( XMPPClientConnection connection ) {
+				log.info( "DISCONNECTED" );
+			}
+
+		} );
+
 		x.packetListener( new PacketListener() {
+
+			private final Logger log = new Logger( PacketListener.class.getName() );
 
 			@Override
 			public void onException( XMPPClientConnection connection, Throwable exception ) {
@@ -35,7 +55,7 @@ public class XMPPClientConnectionTest {
 
 			@Override
 			public void onPacketReceived( XMPPClientConnection connection, Object packet ) {
-				System.out.println( String.format( "RECV [%s] %s", packet.getClass().getName(), packet ) );
+				log.info( "RECV %s", packet );
 			}
 
 		} );

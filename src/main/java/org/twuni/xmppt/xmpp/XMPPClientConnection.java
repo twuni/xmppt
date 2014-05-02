@@ -35,11 +35,13 @@ public class XMPPClientConnection {
 		private String userName;
 		private String password;
 		private PacketListener packetListener;
+		private ConnectionListener connectionListener;
 
 		public XMPPClientConnection build() throws IOException {
 
 			XMPPClientConnection connection = new XMPPClientConnection();
 
+			connection.setConnectionListener( connectionListener );
 			connection.connect( socketFactory, host, port, secure, serviceName, log );
 			connection.login( userName, password );
 			connection.bind( resourceName );
@@ -47,6 +49,11 @@ public class XMPPClientConnection {
 
 			return connection;
 
+		}
+
+		public Builder connectionListener( ConnectionListener connectionListener ) {
+			this.connectionListener = connectionListener;
+			return this;
 		}
 
 		public Builder host( String host ) {
@@ -101,6 +108,14 @@ public class XMPPClientConnection {
 
 	}
 
+	public static interface ConnectionListener {
+
+		public void onConnected( XMPPClientConnection connection );
+
+		public void onDisconnected( XMPPClientConnection connection );
+
+	}
+
 	public static class Context {
 
 		public Stream stream;
@@ -132,6 +147,7 @@ public class XMPPClientConnection {
 	private final Stack<Context> contexts = new Stack<Context>();
 	private XMPPSocket socket;
 	private Thread packetListenerThread;
+	private ConnectionListener connectionListener;
 
 	public void bind( String resourceName ) throws IOException {
 
@@ -165,6 +181,8 @@ public class XMPPClientConnection {
 			nextPacket( Presence.class );
 
 			getContext().resourceName = resourceName;
+
+			dispatchOnConnected();
 
 		}
 
@@ -248,6 +266,18 @@ public class XMPPClientConnection {
 			socket = null;
 		}
 
+	}
+
+	protected void dispatchOnConnected() {
+		if( connectionListener != null ) {
+			connectionListener.onConnected( this );
+		}
+	}
+
+	protected void dispatchOnDisconnected() {
+		if( connectionListener != null ) {
+			connectionListener.onDisconnected( this );
+		}
 	}
 
 	protected void enableStreamManagement() throws IOException {
@@ -418,7 +448,15 @@ public class XMPPClientConnection {
 		}
 	}
 
+	public void setConnectionListener( ConnectionListener connectionListener ) {
+		this.connectionListener = connectionListener;
+	}
+
 	public void startListening( final PacketListener packetListener ) {
+
+		if( !( isConnected() && isAuthenticated() ) ) {
+			throw new IllegalStateException();
+		}
 
 		stopListening();
 
@@ -435,6 +473,9 @@ public class XMPPClientConnection {
 					} catch( IOException exception ) {
 						if( !isInterrupted() ) {
 							packetListener.onException( XMPPClientConnection.this, exception );
+						}
+						if( !isConnected() ) {
+							dispatchOnDisconnected();
 						}
 						break;
 					}
