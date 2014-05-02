@@ -3,6 +3,8 @@ package org.twuni.xmppt;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ResourceBundle;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.junit.After;
 import org.junit.Before;
@@ -12,6 +14,8 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 
 	private XMPPTestServer server;
 	private ResourceBundle properties;
+
+	private Timer failsafe;
 
 	@Override
 	protected String getHost() {
@@ -36,6 +40,14 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 	@Override
 	protected String getServiceName() {
 		return properties.getString( "service_name" );
+	}
+
+	public long getTimeout() {
+		try {
+			return Long.parseLong( properties.getString( "timeout" ) );
+		} catch( Throwable exception ) {
+			return 5000L;
+		}
 	}
 
 	@Override
@@ -65,10 +77,22 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 			server = new XMPPTestServer( getServiceName(), authenticator, getPort(), isSecure() );
 			server.startListening();
 		}
+		failsafe = new Timer( true );
+		failsafe.schedule( new TimerTask() {
+
+			@Override
+			public void run() {
+				fail();
+			}
+
+		}, getTimeout() );
 	}
 
 	@After
 	public void stopTestServer() {
+		failsafe.cancel();
+		failsafe.purge();
+		failsafe = null;
 		if( isLocal() ) {
 			server.stopListening();
 			server = null;
