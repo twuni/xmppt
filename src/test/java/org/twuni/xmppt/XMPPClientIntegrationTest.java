@@ -1,5 +1,6 @@
 package org.twuni.xmppt;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ResourceBundle;
@@ -82,7 +83,11 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 
 			@Override
 			public void run() {
-				fail();
+				try {
+					disconnect();
+				} catch( IOException exception ) {
+					// Ignore.
+				}
 			}
 
 		}, getTimeout() );
