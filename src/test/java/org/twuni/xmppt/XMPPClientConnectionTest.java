@@ -8,41 +8,26 @@ import org.junit.Before;
 import org.junit.Test;
 import org.twuni.Logger;
 import org.twuni.nio.server.auth.SimpleAuthenticator;
+import org.twuni.xmppt.client.SocketFactory;
 import org.twuni.xmppt.xml.XMLBuilder;
 import org.twuni.xmppt.xmpp.XMPPClientConnection;
-import org.twuni.xmppt.xmpp.XMPPClientConnection.ConnectionListener;
 import org.twuni.xmppt.xmpp.XMPPClientConnection.PacketListener;
+import org.twuni.xmppt.xmpp.XMPPClientConnectionManager;
 import org.twuni.xmppt.xmpp.core.Message;
 
 public class XMPPClientConnectionTest {
 
 	private XMPPTestServer server;
 
-	@Test
-	public void happyPath() throws IOException {
+	private XMPPClientConnection.Builder alice() {
 
 		XMPPClientConnection.Builder x = new XMPPClientConnection.Builder();
 
 		x.log( true );
+		x.socketFactory( SocketFactory.getInstance() );
 		x.host( "localhost" ).port( 5222 ).secure( false ).serviceName( "localhost" );
 		x.userName( "alice" ).password( "p8ssw0rd." );
 		x.resourceName( "xmpp-client-connection-test" );
-
-		x.connectionListener( new ConnectionListener() {
-
-			private final Logger log = new Logger( ConnectionListener.class.getName() );
-
-			@Override
-			public void onConnected( XMPPClientConnection connection ) {
-				log.info( "CONNECTED" );
-			}
-
-			@Override
-			public void onDisconnected( XMPPClientConnection connection ) {
-				log.info( "DISCONNECTED" );
-			}
-
-		} );
 
 		x.packetListener( new PacketListener() {
 
@@ -60,7 +45,14 @@ public class XMPPClientConnectionTest {
 
 		} );
 
-		XMPPClientConnection connection = x.build();
+		return x;
+
+	}
+
+	@Test
+	public void happyPath() throws IOException {
+
+		XMPPClientConnection connection = alice().build();
 
 		connection.send( new Message( UUID.randomUUID().toString(), Message.TYPE_CHAT, "alice@localhost", "alice@localhost", new XMLBuilder( "body" ).content( "Hello, world!" ) ) );
 
@@ -71,6 +63,29 @@ public class XMPPClientConnectionTest {
 		}
 
 		connection.disconnect();
+
+	}
+
+	@Test
+	public void happyPath_forManagedConnection() throws IOException {
+
+		String alice = "alice@localhost";
+
+		XMPPClientConnectionManager connectionManager = new XMPPClientConnectionManager();
+
+		connectionManager.startManaging( alice, alice() );
+
+		connectionManager.connectAll();
+
+		connectionManager.getConnection( alice ).send( new Message( UUID.randomUUID().toString(), Message.TYPE_CHAT, "alice@localhost", "alice@localhost", new XMLBuilder( "body" ).content( "Hello, world!" ) ) );
+
+		try {
+			Thread.sleep( 2500 );
+		} catch( InterruptedException ignore ) {
+			// Expect to be interrupted, maybe.
+		}
+
+		connectionManager.stopManagingAll();
 
 	}
 
