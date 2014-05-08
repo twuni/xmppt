@@ -7,7 +7,7 @@ public class SimpleAuthenticator implements Authenticator {
 
 	private final Map<String, String> credentials = new HashMap<String, String>();
 
-	public void setCredential( String identity, String secret ) {
+	public void put( String identity, String secret ) {
 		credentials.put( identity, secret );
 	}
 

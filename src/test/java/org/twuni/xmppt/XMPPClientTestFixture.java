@@ -126,10 +126,6 @@ public class XMPPClientTestFixture extends Assert {
 			id = generatePacketID();
 			send( new Presence( id ) );
 
-			Presence presence = nextPacket();
-
-			assertEquals( fullJID, presence.to() );
-
 		}
 
 	}

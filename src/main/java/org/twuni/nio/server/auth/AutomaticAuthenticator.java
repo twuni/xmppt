@@ -12,7 +12,7 @@ public class AutomaticAuthenticator extends SimpleAuthenticator {
 			super.checkCredential( identity, secret );
 		} catch( UnknownIdentityException exception ) {
 			LOG.info( "CREATE USER %s", identity );
-			setCredential( identity, secret );
+			put( identity, secret );
 		}
 	}
 

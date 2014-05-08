@@ -73,7 +73,7 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 		properties = ResourceBundle.getBundle( getClass().getName() );
 		if( isLocal() ) {
 			SimpleAuthenticator authenticator = new SimpleAuthenticator();
-			authenticator.setCredential( getUsername(), getPassword() );
+			authenticator.put( getUsername(), getPassword() );
 			server = new XMPPTestServer( getServiceName(), authenticator, getPort(), isSecure() );
 			server.startListening();
 		}

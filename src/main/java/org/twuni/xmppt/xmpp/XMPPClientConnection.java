@@ -23,6 +23,14 @@ import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public class XMPPClientConnection {
 
+	public static interface AcknowledgmentListener {
+
+		public void onFailedAcknowledgment( int expected, int actual );
+
+		public void onSuccessfulAcknowledgment();
+
+	}
+
 	public static class Builder {
 
 		private SocketFactory socketFactory = SocketFactory.getInstance();
@@ -34,13 +42,20 @@ public class XMPPClientConnection {
 		private String resourceName = "default";
 		private String userName;
 		private String password;
+		private AcknowledgmentListener acknowledgmentListener;
 		private PacketListener packetListener;
 		private ConnectionListener connectionListener;
+
+		public Builder acknowledgmentListener( AcknowledgmentListener acknowledgmentListener ) {
+			this.acknowledgmentListener = acknowledgmentListener;
+			return this;
+		}
 
 		public XMPPClientConnection build() throws IOException {
 
 			XMPPClientConnection connection = new XMPPClientConnection();
 
+			connection.setAcknowledgmentListener( acknowledgmentListener );
 			connection.setConnectionListener( connectionListener );
 			connection.connect( socketFactory, host, port, secure, serviceName, log );
 			connection.login( userName, password );
@@ -147,6 +162,7 @@ public class XMPPClientConnection {
 	private final Stack<Context> contexts = new Stack<Context>();
 	private XMPPSocket socket;
 	private Thread packetListenerThread;
+	private AcknowledgmentListener acknowledgmentListener;
 	private ConnectionListener connectionListener;
 
 	public void bind( String resourceName ) throws IOException {
@@ -268,6 +284,12 @@ public class XMPPClientConnection {
 
 	}
 
+	private void dispatchFailedAcknowledgment( int expected, int actual ) {
+		if( acknowledgmentListener != null ) {
+			acknowledgmentListener.onFailedAcknowledgment( expected, actual );
+		}
+	}
+
 	protected void dispatchOnConnected() {
 		if( connectionListener != null ) {
 			connectionListener.onConnected( this );
@@ -277,6 +299,12 @@ public class XMPPClientConnection {
 	protected void dispatchOnDisconnected() {
 		if( connectionListener != null ) {
 			connectionListener.onDisconnected( this );
+		}
+	}
+
+	private void dispatchSuccessfulAcknowledgment() {
+		if( acknowledgmentListener != null ) {
+			acknowledgmentListener.onSuccessfulAcknowledgment();
 		}
 	}
 
@@ -427,9 +455,9 @@ public class XMPPClientConnection {
 			} else if( packet instanceof Acknowledgment ) {
 				Acknowledgment ack = (Acknowledgment) packet;
 				if( getContext().sent != ack.getH() ) {
-					// TODO: Resend unacknowledged messages.
+					dispatchFailedAcknowledgment( getContext().sent, ack.getH() );
 				} else {
-					// TODO: Acknowledge sent messages.
+					dispatchSuccessfulAcknowledgment();
 				}
 			}
 			return;
@@ -439,13 +467,19 @@ public class XMPPClientConnection {
 
 	}
 
-	public void send( Object packet ) throws IOException {
-		socket.write( packet );
-		if( isStreamManagementEnabled() ) {
-			if( !StreamManagement.is( packet ) ) {
-				getContext().sent++;
+	public void send( Object... packets ) throws IOException {
+		for( Object packet : packets ) {
+			socket.write( packet );
+			if( isStreamManagementEnabled() ) {
+				if( !StreamManagement.is( packet ) ) {
+					getContext().sent++;
+				}
 			}
 		}
+	}
+
+	public void setAcknowledgmentListener( AcknowledgmentListener acknowledgmentListener ) {
+		this.acknowledgmentListener = acknowledgmentListener;
 	}
 
 	public void setConnectionListener( ConnectionListener connectionListener ) {
