@@ -65,7 +65,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOnline( "register-push" );
 		IQ sent = new IQ( generatePacketID(), IQ.TYPE_SET, null, getStream().from(), Push.register( "xmppt", "IGNORE_THIS" ) );
 		send( sent );
-		IQ received = nextPacket();
+		IQ received = nextPacket( IQ.class );
 		assertEquals( IQ.TYPE_RESULT, received.type() );
 		assertEquals( sent.id(), received.id() );
 		assertNotNull( received.getContent( Push.class ) );
