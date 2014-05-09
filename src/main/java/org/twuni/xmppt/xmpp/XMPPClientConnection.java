@@ -314,7 +314,7 @@ public class XMPPClientConnection {
 
 			send( new Enable() );
 
-			Enabled enabled = nextPacket( Enabled.class );
+			Enabled enabled = nextPacket();
 
 			Context context = getContext();
 

@@ -14,11 +14,14 @@ public class Enabled {
 	public static Enabled from( XMLElement element ) {
 
 		String id = element.attribute( ATTRIBUTE_ID );
-		String resume = element.attribute( ATTRIBUTE_RESUME );
-		String max = element.attribute( ATTRIBUTE_MAX );
+		String resumeString = element.attribute( ATTRIBUTE_RESUME );
+		String maxString = element.attribute( ATTRIBUTE_MAX );
 		String location = element.attribute( ATTRIBUTE_LOCATION );
 
-		return new Enabled( id, location, max != null ? Integer.parseInt( max ) : 0, resume != null && Boolean.parseBoolean( resume ) );
+		int max = maxString != null ? Integer.parseInt( maxString ) : 0;
+		boolean resume = resumeString != null && resumeString.matches( "(true|1)" );
+
+		return new Enabled( id, location, max, resume );
 
 	}
 

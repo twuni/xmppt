@@ -17,6 +17,7 @@ import org.twuni.nio.server.auth.AutomaticAuthenticator;
 import org.twuni.xmppt.xmpp.XMPPSocket;
 import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
+import org.twuni.xmppt.xmpp.core.Failure;
 import org.twuni.xmppt.xmpp.core.Features;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Message;
@@ -205,9 +206,13 @@ public class XMPPTestServer implements Runnable {
 		}
 
 		if( packet instanceof Enable ) {
-			xmpp.send( new Enabled() );
-			xmpp.streamManagementEnabled = true;
-			getOrCreateUnacknowledgedPacketQueue( jid );
+			if( xmpp.isBound() && !xmpp.hasSession() ) {
+				xmpp.send( new Enabled() );
+				xmpp.streamManagementEnabled = true;
+				getOrCreateUnacknowledgedPacketQueue( jid );
+			} else {
+				xmpp.send( new Failure( StreamManagement.NAMESPACE ) );
+			}
 		}
 
 		if( packet instanceof Enabled ) {

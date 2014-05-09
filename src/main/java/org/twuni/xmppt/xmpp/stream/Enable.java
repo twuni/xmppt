@@ -10,9 +10,11 @@ public class Enable {
 	public static final String ATTRIBUTE_RESUME = "resume";
 
 	public static Enable from( XMLElement element ) {
-		String max = element.attribute( ATTRIBUTE_MAX );
-		String resume = element.attribute( ATTRIBUTE_RESUME );
-		return new Enable( max != null ? Integer.parseInt( max ) : 0, resume != null && Boolean.parseBoolean( resume ) );
+		String maxString = element.attribute( ATTRIBUTE_MAX );
+		String resumeString = element.attribute( ATTRIBUTE_RESUME );
+		int max = maxString != null ? Integer.parseInt( maxString ) : 0;
+		boolean resume = resumeString != null && resumeString.matches( "(true|1)" );
+		return new Enable( max, resume );
 	}
 
 	public static boolean is( XMLElement element ) {

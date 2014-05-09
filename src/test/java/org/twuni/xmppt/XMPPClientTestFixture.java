@@ -188,13 +188,19 @@ public class XMPPClientTestFixture extends Assert {
 	}
 
 	protected void enableStreamManagement() throws IOException {
+
 		if( isFeatureAvailable( StreamManagement.class ) ) {
+
 			send( new Enable() );
-			Enabled enabled = nextPacket( Enabled.class );
+
+			Enabled enabled = nextPacket();
+
 			getContext().streamManagementEnabled = true;
 			getContext().received = 0;
 			getContext().sent = 0;
+
 		}
+
 	}
 
 	protected String generatePacketID() {

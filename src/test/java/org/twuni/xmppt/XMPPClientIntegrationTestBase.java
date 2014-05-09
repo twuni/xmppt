@@ -73,6 +73,20 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	}
 
 	@Test
+	public void sendEnable_shouldCauseFailureWhenSentBeforeBind() throws IOException {
+		connect();
+		login();
+		try {
+			enableStreamManagement();
+			fail();
+		} catch( ClassCastException exception ) {
+			// This is what we want.
+		}
+		bind( "full-on-double-rainbow" );
+		disconnect();
+	}
+
+	@Test
 	public void server_shouldAcknowledgeAllPacketsSent() throws IOException {
 
 		goOnline( "send-n-messages-expect-ack-n" );
