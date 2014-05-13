@@ -53,6 +53,14 @@ public class StreamManagement implements Extension {
 				return Enabled.from( element );
 			}
 
+			if( Resume.is( element ) ) {
+				return Resume.from( element );
+			}
+
+			if( Resumed.is( element ) ) {
+				return Resumed.from( element );
+			}
+
 			return element;
 
 		}
@@ -71,7 +79,7 @@ public class StreamManagement implements Extension {
 	}
 
 	public static boolean is( Object packet ) {
-		return packet instanceof Acknowledgment || packet instanceof AcknowledgmentRequest || packet instanceof Enable || packet instanceof Enabled;
+		return packet instanceof Acknowledgment || packet instanceof AcknowledgmentRequest || packet instanceof Enable || packet instanceof Enabled || packet instanceof Resume || packet instanceof Resumed;
 	}
 
 	public static boolean is( XMLElement element ) {

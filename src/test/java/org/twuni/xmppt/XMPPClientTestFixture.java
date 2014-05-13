@@ -19,19 +19,22 @@ import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 import org.twuni.xmppt.xmpp.stream.Enable;
 import org.twuni.xmppt.xmpp.stream.Enabled;
+import org.twuni.xmppt.xmpp.stream.Resume;
+import org.twuni.xmppt.xmpp.stream.Resumed;
 import org.twuni.xmppt.xmpp.stream.Stream;
 import org.twuni.xmppt.xmpp.stream.StreamError;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public class XMPPClientTestFixture extends Assert {
 
-	private static class Context {
+	protected static class Context {
 
 		public Stream stream;
 		public Features features;
 		public int sequence;
 		public int sent;
 		public int received;
+		public String streamManagementID;
 		public boolean streamManagementEnabled;
 
 		public String nextID() {
@@ -111,6 +114,8 @@ public class XMPPClientTestFixture extends Assert {
 
 			enableStreamManagement();
 
+			assertPacketsSentWereReceived();
+
 			if( isFeatureAvailable( Session.class ) ) {
 
 				id = generatePacketID();
@@ -123,8 +128,12 @@ public class XMPPClientTestFixture extends Assert {
 
 			}
 
+			assertPacketsSentWereReceived();
+
 			id = generatePacketID();
 			send( new Presence( id ) );
+
+			assertPacketsSentWereReceived();
 
 		}
 
@@ -179,11 +188,7 @@ public class XMPPClientTestFixture extends Assert {
 			contexts.pop();
 		}
 
-		if( xmpp != null ) {
-			xmpp.flush();
-			xmpp.close();
-			xmpp = null;
-		}
+		invokeConnectionLoss();
 
 	}
 
@@ -191,10 +196,11 @@ public class XMPPClientTestFixture extends Assert {
 
 		if( isFeatureAvailable( StreamManagement.class ) ) {
 
-			send( new Enable() );
+			send( new Enable( 30, true ) );
 
 			Enabled enabled = nextPacket();
 
+			getContext().streamManagementID = enabled.id();
 			getContext().streamManagementEnabled = true;
 			getContext().received = 0;
 			getContext().sent = 0;
@@ -208,7 +214,7 @@ public class XMPPClientTestFixture extends Assert {
 		return context != null ? context.nextID() : Long.toHexString( System.currentTimeMillis() );
 	}
 
-	private Context getContext() {
+	protected Context getContext() {
 		return contexts.isEmpty() ? null : contexts.peek();
 	}
 
@@ -267,10 +273,25 @@ public class XMPPClientTestFixture extends Assert {
 		goOnline( getResourceName() );
 	}
 
+	protected void goOnline( Context previousContext ) throws IOException {
+		connect();
+		login();
+		resume( previousContext );
+	}
+
 	protected void goOnline( String resourceName ) throws IOException {
 		connect();
 		login();
 		bind( resourceName );
+	}
+
+	protected void invokeConnectionLoss() throws IOException {
+		contexts.clear();
+		if( xmpp != null ) {
+			xmpp.flush();
+			xmpp.close();
+			xmpp = null;
+		}
 	}
 
 	protected boolean isAuthenticated() {
@@ -378,6 +399,31 @@ public class XMPPClientTestFixture extends Assert {
 			}
 			disconnect();
 		}
+	}
+
+	protected void resume( Context previousContext ) throws IOException {
+
+		if( isFeatureAvailable( StreamManagement.class ) ) {
+
+			if( previousContext != null ) {
+
+				send( new Resume( previousContext.streamManagementID, previousContext.received ) );
+				Resumed resumed = nextPacket();
+
+				Context context = getContext();
+
+				context.streamManagementEnabled = true;
+				context.streamManagementID = resumed.getPreviousID();
+				context.received = previousContext.received;
+				context.sent = previousContext.sent;
+
+				assertEquals( context.streamManagementID, resumed.getPreviousID() );
+				assertEquals( context.sent, resumed.getH() );
+
+			}
+
+		}
+
 	}
 
 	protected void send( Object packet ) throws IOException {

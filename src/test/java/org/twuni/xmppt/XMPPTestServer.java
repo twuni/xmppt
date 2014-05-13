@@ -31,6 +31,8 @@ import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 import org.twuni.xmppt.xmpp.stream.Enable;
 import org.twuni.xmppt.xmpp.stream.Enabled;
+import org.twuni.xmppt.xmpp.stream.Resume;
+import org.twuni.xmppt.xmpp.stream.Resumed;
 import org.twuni.xmppt.xmpp.stream.Stream;
 import org.twuni.xmppt.xmpp.stream.StreamError;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
@@ -46,6 +48,7 @@ public class XMPPTestServer implements Runnable {
 		public String serviceName;
 		public String sessionID;
 		public boolean available;
+		public String streamManagementID;
 		public boolean streamManagementEnabled;
 		public int received;
 		public int sent;
@@ -117,6 +120,10 @@ public class XMPPTestServer implements Runnable {
 	}
 
 	public String generateStreamID() {
+		return Long.toHexString( System.currentTimeMillis() );
+	}
+
+	public String generateStreamManagementID() {
 		return Long.toHexString( System.currentTimeMillis() );
 	}
 
@@ -205,9 +212,42 @@ public class XMPPTestServer implements Runnable {
 			transporter.transport( message.from( jid ), message.to(), unacknowledged.get( jid ) );
 		}
 
+		if( packet instanceof Resume ) {
+			Resume resume = (Resume) packet;
+			if( xmpp.isBound() ) {
+				xmpp.send( new Failure( StreamManagement.NAMESPACE ) );
+			} else {
+				xmpp.streamManagementID = resume.getPreviousID();
+				xmpp.send( new Resumed( xmpp.streamManagementID, xmpp.received ) );
+				if( xmpp.sent != resume.getH() ) {
+					// TODO: Retransmit unacknowledged packets.
+				}
+			}
+		}
+
+		if( packet instanceof Resumed ) {
+			Resumed resumed = (Resumed) packet;
+			if( xmpp.isBound() ) {
+				xmpp.send( new Failure( StreamManagement.NAMESPACE ) );
+			} else {
+				xmpp.streamManagementID = resumed.getPreviousID();
+				if( xmpp.sent != resumed.getH() ) {
+					// TODO: Retransmit unacknowledged packets.
+				}
+			}
+		}
+
 		if( packet instanceof Enable ) {
-			if( xmpp.isBound() && !xmpp.hasSession() ) {
-				xmpp.send( new Enabled() );
+			Enable enable = (Enable) packet;
+			if( xmpp.isBound() ) {
+				Enabled enabled = null;
+				if( enable.supportsSessionResumption() ) {
+					xmpp.streamManagementID = generateStreamManagementID();
+					enabled = new Enabled( xmpp.streamManagementID, null, enable.getMaximumResumptionTime(), enable.supportsSessionResumption() );
+				} else {
+					enabled = new Enabled();
+				}
+				xmpp.send( enabled );
 				xmpp.streamManagementEnabled = true;
 				getOrCreateUnacknowledgedPacketQueue( jid );
 			} else {
@@ -216,6 +256,7 @@ public class XMPPTestServer implements Runnable {
 		}
 
 		if( packet instanceof Enabled ) {
+			xmpp.streamManagementID = ( (Enabled) packet ).id();
 			xmpp.streamManagementEnabled = true;
 			getOrCreateUnacknowledgedPacketQueue( jid );
 		}

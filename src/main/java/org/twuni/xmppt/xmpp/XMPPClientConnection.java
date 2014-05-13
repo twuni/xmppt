@@ -1,6 +1,12 @@
 package org.twuni.xmppt.xmpp;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Stack;
 
 import org.twuni.xmppt.client.SocketFactory;
@@ -17,6 +23,8 @@ import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 import org.twuni.xmppt.xmpp.stream.Enable;
 import org.twuni.xmppt.xmpp.stream.Enabled;
+import org.twuni.xmppt.xmpp.stream.Resume;
+import org.twuni.xmppt.xmpp.stream.Resumed;
 import org.twuni.xmppt.xmpp.stream.Stream;
 import org.twuni.xmppt.xmpp.stream.StreamError;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
@@ -42,6 +50,7 @@ public class XMPPClientConnection {
 		private String resourceName = "default";
 		private String userName;
 		private String password;
+		private InputStream state;
 		private AcknowledgmentListener acknowledgmentListener;
 		private PacketListener packetListener;
 		private ConnectionListener connectionListener;
@@ -59,7 +68,13 @@ public class XMPPClientConnection {
 			connection.setConnectionListener( connectionListener );
 			connection.connect( socketFactory, host, port, secure, serviceName, log );
 			connection.login( userName, password );
-			connection.bind( resourceName );
+
+			if( state != null ) {
+				connection.restoreState( state );
+			} else {
+				connection.bind( resourceName );
+			}
+
 			connection.startListening( packetListener );
 
 			return connection;
@@ -116,6 +131,19 @@ public class XMPPClientConnection {
 			return this;
 		}
 
+		public Builder state( byte [] state ) throws IOException {
+			return state != null ? state( state, 0, state.length ) : state( (InputStream) null );
+		}
+
+		public Builder state( byte [] state, int offset, int length ) throws IOException {
+			return state( state != null ? new ByteArrayInputStream( state, offset, length ) : null );
+		}
+
+		public Builder state( InputStream state ) throws IOException {
+			this.state = state;
+			return this;
+		}
+
 		public Builder userName( String userName ) {
 			this.userName = userName;
 			return this;
@@ -133,20 +161,76 @@ public class XMPPClientConnection {
 
 	public static class Context {
 
+		private static final int VERSION = 1;
+
+		private static String readUTF( DataInputStream in ) throws IOException {
+			int length = in.readInt();
+			return length > 0 ? in.readUTF() : null;
+		}
+
+		private static void writeUTF( DataOutputStream d, String in ) throws IOException {
+			if( in == null ) {
+				d.writeInt( 0 );
+			} else {
+				d.writeInt( in.length() );
+				d.writeUTF( in );
+			}
+		}
+
 		public Stream stream;
 		public Features features;
 		public int sequence;
 		public int sent;
 		public int received;
+		public String streamManagementID;
 		public boolean streamManagementEnabled;
 		public String userName;
 		public String serviceName;
 		public String resourceName;
 		public String fullJID;
 
+		public void load( InputStream in ) throws IOException {
+
+			DataInputStream d = new DataInputStream( in );
+
+			int version = d.readInt();
+
+			switch( version ) {
+
+				case 1:
+
+					sequence = d.readInt();
+					sent = d.readInt();
+					received = d.readInt();
+					streamManagementID = readUTF( d );
+					resourceName = readUTF( d );
+					fullJID = readUTF( d );
+
+					break;
+
+			}
+
+		}
+
 		public String nextID() {
 			sequence++;
 			return String.format( "%s-%d", stream.id(), Integer.valueOf( sequence ) );
+		}
+
+		public void save( OutputStream out ) throws IOException {
+
+			DataOutputStream d = new DataOutputStream( out );
+
+			d.writeInt( VERSION );
+
+			d.writeInt( sequence );
+			d.writeInt( sent );
+			d.writeInt( received );
+
+			writeUTF( d, streamManagementID );
+			writeUTF( d, resourceName );
+			writeUTF( d, fullJID );
+
 		}
 
 	}
@@ -312,12 +396,13 @@ public class XMPPClientConnection {
 
 		if( isFeatureAvailable( StreamManagement.class ) ) {
 
-			send( new Enable() );
+			send( new Enable( 300, true ) );
 
 			Enabled enabled = nextPacket();
 
 			Context context = getContext();
 
+			context.streamManagementID = enabled.id();
 			context.streamManagementEnabled = true;
 			context.received = 0;
 			context.sent = 0;
@@ -465,6 +550,65 @@ public class XMPPClientConnection {
 
 		packetListener.onPacketReceived( this, packet );
 
+	}
+
+	public void restoreState( byte [] state ) throws IOException {
+		restoreState( state, 0, state.length );
+	}
+
+	public void restoreState( byte [] state, int offset, int length ) throws IOException {
+		restoreState( new ByteArrayInputStream( state, offset, length ) );
+	}
+
+	public void restoreState( InputStream in ) throws IOException {
+		Context context = getContext();
+		if( context == null || context.userName == null ) {
+			throw new IllegalStateException( "The stream must be authenticated before attempting to restore state." );
+		}
+		context.load( in );
+		resume( context );
+	}
+
+	private void resume( Context previousContext ) throws IOException {
+
+		if( isFeatureAvailable( StreamManagement.class ) ) {
+
+			if( previousContext != null ) {
+
+				send( new Resume( previousContext.streamManagementID, previousContext.received ) );
+
+				Resumed resumed = nextPacket();
+				Context context = getContext();
+
+				context.streamManagementEnabled = true;
+				context.streamManagementID = resumed.getPreviousID();
+				context.received = previousContext.received;
+				context.sent = previousContext.sent;
+
+				if( context.sent != resumed.getH() ) {
+					dispatchFailedAcknowledgment( context.sent, resumed.getH() );
+				} else {
+					dispatchSuccessfulAcknowledgment();
+				}
+
+			}
+
+		}
+
+	}
+
+	public byte [] saveState() throws IOException {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		saveState( out );
+		return out.toByteArray();
+	}
+
+	public void saveState( OutputStream out ) throws IOException {
+		Context context = getContext();
+		if( context == null ) {
+			context = new Context();
+		}
+		context.save( out );
 	}
 
 	public void send( Object... packets ) throws IOException {

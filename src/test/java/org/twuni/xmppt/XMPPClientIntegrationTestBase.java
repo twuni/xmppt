@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Message;
+import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.ping.Ping;
 import org.twuni.xmppt.xmpp.push.Push;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
@@ -27,7 +28,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	protected void invokeDroppedMessage() throws IOException {
 		goOnline( "drop-message-on-purpose" );
 		send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>This message was dropped.</body>" ) );
-		goOffline();
+		invokeConnectionLoss();
 	}
 
 	@Test
@@ -87,6 +88,18 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 	}
 
 	@Test
+	public void sendPresence_shouldBeAcknowledged() throws IOException {
+		goOnline( "presence-storm" );
+		assertPacketsSentWereReceived();
+		for( int i = 0; i < 10; i++ ) {
+			send( new Presence( generatePacketID() ) );
+			nextPacket( Presence.class );
+		}
+		assertPacketsSentWereReceived();
+		goOffline();
+	}
+
+	@Test
 	public void server_shouldAcknowledgeAllPacketsSent() throws IOException {
 
 		goOnline( "send-n-messages-expect-ack-n" );
@@ -102,6 +115,18 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 		assertPacketsSentWereReceived();
 
+		goOffline();
+
+	}
+
+	@Test
+	public void server_shouldDeliverUnacknowledgedStanzas_whenResumingSession() throws IOException {
+
+		goOnline( "previous-session-to-resume" );
+		Context previousContext = getContext();
+		invokeConnectionLoss();
+
+		goOnline( previousContext );
 		goOffline();
 
 	}
@@ -152,14 +177,6 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 		goOffline();
 
-	}
-
-	@Test
-	public void server_shouldResendDroppedMessage() throws IOException {
-		invokeDroppedMessage();
-		goOnline( "expect-resend-dropped-message" );
-		nextPacket( Message.class );
-		goOffline();
 	}
 
 	@Test
