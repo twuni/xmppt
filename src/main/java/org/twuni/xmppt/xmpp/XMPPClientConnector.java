@@ -8,10 +8,12 @@ public class XMPPClientConnector extends Retry {
 
 	private final XMPPClientConnectionManager connectionManager;
 	private final String id;
+	private final byte [] previousState;
 
-	public XMPPClientConnector( XMPPClientConnectionManager connectionManager, String id ) {
+	public XMPPClientConnector( XMPPClientConnectionManager connectionManager, String id, byte [] previousState ) {
 		this.connectionManager = connectionManager;
 		this.id = id;
+		this.previousState = previousState;
 	}
 
 	@Override
@@ -30,7 +32,7 @@ public class XMPPClientConnector extends Retry {
 	@Override
 	protected void tryAgain() {
 		try {
-			connectionManager.connect( id );
+			connectionManager.connect( id, previousState );
 		} catch( IOException ignore ) {
 			// Ignore.
 		}

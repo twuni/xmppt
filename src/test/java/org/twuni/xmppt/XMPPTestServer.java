@@ -220,7 +220,7 @@ public class XMPPTestServer implements Runnable {
 				xmpp.streamManagementID = resume.getPreviousID();
 				xmpp.send( new Resumed( xmpp.streamManagementID, xmpp.received ) );
 				if( xmpp.sent != resume.getH() ) {
-					// TODO: Retransmit unacknowledged packets.
+					sendUnacknowledgedMessages( xmpp.jid() );
 				}
 			}
 		}
@@ -232,7 +232,7 @@ public class XMPPTestServer implements Runnable {
 			} else {
 				xmpp.streamManagementID = resumed.getPreviousID();
 				if( xmpp.sent != resumed.getH() ) {
-					// TODO: Retransmit unacknowledged packets.
+					sendUnacknowledgedMessages( xmpp.jid() );
 				}
 			}
 		}

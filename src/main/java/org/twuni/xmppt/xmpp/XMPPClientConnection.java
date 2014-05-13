@@ -33,9 +33,9 @@ public class XMPPClientConnection {
 
 	public static interface AcknowledgmentListener {
 
-		public void onFailedAcknowledgment( int expected, int actual );
+		public void onFailedAcknowledgment( XMPPClientConnection connection, int expected, int actual );
 
-		public void onSuccessfulAcknowledgment();
+		public void onSuccessfulAcknowledgment( XMPPClientConnection connection );
 
 	}
 
@@ -44,6 +44,7 @@ public class XMPPClientConnection {
 		private SocketFactory socketFactory = SocketFactory.getInstance();
 		private String host = "localhost";
 		private int port = 5222;
+		private int sessionResumptionTimeout = 300;
 		private boolean secure = false;
 		private boolean log = true;
 		private String serviceName = "localhost";
@@ -72,7 +73,7 @@ public class XMPPClientConnection {
 			if( state != null ) {
 				connection.restoreState( state );
 			} else {
-				connection.bind( resourceName );
+				connection.bind( resourceName, sessionResumptionTimeout );
 			}
 
 			connection.startListening( packetListener );
@@ -123,6 +124,11 @@ public class XMPPClientConnection {
 
 		public Builder serviceName( String serviceName ) {
 			this.serviceName = serviceName;
+			return this;
+		}
+
+		public Builder sessionResumptionTimeout( int timeout ) {
+			sessionResumptionTimeout = timeout;
 			return this;
 		}
 
@@ -182,6 +188,7 @@ public class XMPPClientConnection {
 		public int sequence;
 		public int sent;
 		public int received;
+		public int sessionResumptionTimeout;
 		public String streamManagementID;
 		public boolean streamManagementEnabled;
 		public String userName;
@@ -202,6 +209,7 @@ public class XMPPClientConnection {
 					sequence = d.readInt();
 					sent = d.readInt();
 					received = d.readInt();
+					sessionResumptionTimeout = d.readInt();
 					streamManagementID = readUTF( d );
 					resourceName = readUTF( d );
 					fullJID = readUTF( d );
@@ -226,6 +234,7 @@ public class XMPPClientConnection {
 			d.writeInt( sequence );
 			d.writeInt( sent );
 			d.writeInt( received );
+			d.writeInt( sessionResumptionTimeout );
 
 			writeUTF( d, streamManagementID );
 			writeUTF( d, resourceName );
@@ -250,6 +259,10 @@ public class XMPPClientConnection {
 	private ConnectionListener connectionListener;
 
 	public void bind( String resourceName ) throws IOException {
+		bind( resourceName, 0 );
+	}
+
+	public void bind( String resourceName, int sessionResumptionTimeout ) throws IOException {
 
 		String id = null;
 
@@ -264,7 +277,7 @@ public class XMPPClientConnection {
 
 			getContext().fullJID = bind.jid();
 
-			enableStreamManagement();
+			enableStreamManagement( sessionResumptionTimeout );
 
 			if( isFeatureAvailable( Session.class ) ) {
 
@@ -370,7 +383,7 @@ public class XMPPClientConnection {
 
 	private void dispatchFailedAcknowledgment( int expected, int actual ) {
 		if( acknowledgmentListener != null ) {
-			acknowledgmentListener.onFailedAcknowledgment( expected, actual );
+			acknowledgmentListener.onFailedAcknowledgment( this, expected, actual );
 		}
 	}
 
@@ -388,15 +401,15 @@ public class XMPPClientConnection {
 
 	private void dispatchSuccessfulAcknowledgment() {
 		if( acknowledgmentListener != null ) {
-			acknowledgmentListener.onSuccessfulAcknowledgment();
+			acknowledgmentListener.onSuccessfulAcknowledgment( this );
 		}
 	}
 
-	protected void enableStreamManagement() throws IOException {
+	protected void enableStreamManagement( int sessionResumptionTimeout ) throws IOException {
 
 		if( isFeatureAvailable( StreamManagement.class ) ) {
 
-			send( new Enable( 300, true ) );
+			send( new Enable( sessionResumptionTimeout, sessionResumptionTimeout != 0 ) );
 
 			Enabled enabled = nextPacket();
 
@@ -577,13 +590,22 @@ public class XMPPClientConnection {
 
 				send( new Resume( previousContext.streamManagementID, previousContext.received ) );
 
-				Resumed resumed = nextPacket();
+				Object response = nextPacket();
+
+				if( !( response instanceof Resumed ) ) {
+					bind( previousContext.resourceName );
+					return;
+				}
+
 				Context context = getContext();
+				Resumed resumed = (Resumed) response;
 
 				context.streamManagementEnabled = true;
 				context.streamManagementID = resumed.getPreviousID();
 				context.received = previousContext.received;
 				context.sent = previousContext.sent;
+
+				dispatchOnConnected();
 
 				if( context.sent != resumed.getH() ) {
 					dispatchFailedAcknowledgment( context.sent, resumed.getH() );
@@ -620,6 +642,10 @@ public class XMPPClientConnection {
 				}
 			}
 		}
+	}
+
+	public void sendAcknowledgment() throws IOException {
+		send( new Acknowledgment( getContext().received ) );
 	}
 
 	public void setAcknowledgmentListener( AcknowledgmentListener acknowledgmentListener ) {

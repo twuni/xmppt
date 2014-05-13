@@ -124,7 +124,10 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 
 		goOnline( "previous-session-to-resume" );
 		Context previousContext = getContext();
+
 		invokeConnectionLoss();
+		// FIXME: This triggers a half-open TCP socket on the server side, which on a
+		// single-connection test server, prohibits further connections.
 
 		goOnline( previousContext );
 		goOffline();

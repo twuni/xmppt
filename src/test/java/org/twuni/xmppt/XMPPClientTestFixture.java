@@ -114,8 +114,6 @@ public class XMPPClientTestFixture extends Assert {
 
 			enableStreamManagement();
 
-			assertPacketsSentWereReceived();
-
 			if( isFeatureAvailable( Session.class ) ) {
 
 				id = generatePacketID();
@@ -127,8 +125,6 @@ public class XMPPClientTestFixture extends Assert {
 				assertEquals( IQ.TYPE_RESULT, sessionIQ.type() );
 
 			}
-
-			assertPacketsSentWereReceived();
 
 			id = generatePacketID();
 			send( new Presence( id ) );

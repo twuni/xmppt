@@ -35,6 +35,7 @@ public class XMPPClientConnectionTest {
 
 		x.log( true );
 		x.socketFactory( SocketFactory.getInstance() );
+		x.sessionResumptionTimeout( 300 );
 		x.serviceName( serviceName ).resourceName( "xmpp-client-connection-test" );
 
 		x.acknowledgmentListener( new AcknowledgmentListener() {
@@ -42,12 +43,12 @@ public class XMPPClientConnectionTest {
 			private final Logger log = new Logger( AcknowledgmentListener.class.getName() );
 
 			@Override
-			public void onFailedAcknowledgment( int expected, int actual ) {
+			public void onFailedAcknowledgment( XMPPClientConnection connection, int expected, int actual ) {
 				log.info( "[%s] FAIL %s (expected:%d actual:%d)", username, Integer.valueOf( expected ), Integer.valueOf( actual ) );
 			}
 
 			@Override
-			public void onSuccessfulAcknowledgment() {
+			public void onSuccessfulAcknowledgment( XMPPClientConnection connection ) {
 				log.info( "[%s] PASS", username );
 			}
 
@@ -82,7 +83,9 @@ public class XMPPClientConnectionTest {
 
 		XMPPClientConnection connection = alice().build();
 
-		connection.send( new Message( UUID.randomUUID().toString(), Message.TYPE_CHAT, "alice@localhost", "alice@localhost", new XMLBuilder( "body" ).content( "Hello, world!" ) ) );
+		connection.sendAcknowledgment();
+		connection.send( new Message( UUID.randomUUID().toString(), Message.TYPE_CHAT, "alice@localhost", "alice@localhost", new XMLBuilder( "body" ).content( "Hello, world!" ) ), new AcknowledgmentRequest() );
+		connection.sendAcknowledgment();
 
 		try {
 			Thread.sleep( 2500 );

@@ -13,6 +13,10 @@ public class XMPPClientConnectionManager implements ConnectionListener {
 	private final Map<String, XMPPClientConnection> idsToConnections = new HashMap<String, XMPPClientConnection>();
 
 	public void connect( String id ) throws IOException {
+		connect( id, null );
+	}
+
+	public void connect( String id, byte [] previousState ) throws IOException {
 
 		if( isConnected( id ) ) {
 			return;
@@ -20,6 +24,7 @@ public class XMPPClientConnectionManager implements ConnectionListener {
 
 		XMPPClientConnection.Builder builder = managedConnectionBuilders.get( id );
 		if( builder != null ) {
+			builder.state( previousState );
 			builder.connectionListener( this );
 			XMPPClientConnection connection = builder.build();
 			if( connection != null ) {
@@ -77,13 +82,17 @@ public class XMPPClientConnectionManager implements ConnectionListener {
 		connectionsToIDs.remove( connection );
 		idsToConnections.remove( id );
 		if( isManaging( id ) ) {
-			reconnect( id );
+			try {
+				reconnect( id, connection.saveState() );
+			} catch( IOException exception ) {
+				throw new RuntimeException( exception );
+			}
 		}
 	}
 
-	private void reconnect( String id ) {
+	private void reconnect( String id, byte [] previousState ) {
 		if( isManaging( id ) && !isConnected( id ) ) {
-			new XMPPClientConnector( this, id ).start();
+			new XMPPClientConnector( this, id, previousState ).start();
 		}
 	}
 
