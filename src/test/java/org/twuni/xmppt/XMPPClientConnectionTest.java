@@ -44,7 +44,7 @@ public class XMPPClientConnectionTest {
 
 			@Override
 			public void onFailedAcknowledgment( XMPPClientConnection connection, int expected, int actual ) {
-				log.info( "[%s] FAIL %s (expected:%d actual:%d)", username, Integer.valueOf( expected ), Integer.valueOf( actual ) );
+				log.info( "[%s] FAIL (expected:%d actual:%d)", username, Integer.valueOf( expected ), Integer.valueOf( actual ) );
 			}
 
 			@Override
@@ -135,6 +135,40 @@ public class XMPPClientConnectionTest {
 
 	public XMPPClientConnection.Builder local( String serviceName, final String username, String password ) {
 		return any( serviceName, username, password ).host( "localhost" ).port( 5222 ).secure( false );
+	}
+
+	@Test
+	public void resume_shouldNotFail() throws IOException {
+
+		XMPPClientConnection connection = alice().build();
+
+		try {
+			Thread.sleep( 2500 );
+		} catch( InterruptedException ignore ) {
+			// Ain't no thang.
+		}
+
+		connection.terminate();
+
+		try {
+			Thread.sleep( 500 );
+		} catch( InterruptedException ignore ) {
+			// Ain't no thang.
+		}
+
+		server.stopListening();
+		server.startListening();
+
+		connection = alice().state( connection.saveState() ).build();
+
+		try {
+			Thread.sleep( 2500 );
+		} catch( InterruptedException ignore ) {
+			// Ain't no thang.
+		}
+
+		connection.disconnect();
+
 	}
 
 	@Before

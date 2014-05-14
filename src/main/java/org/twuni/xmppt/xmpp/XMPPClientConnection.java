@@ -373,11 +373,7 @@ public class XMPPClientConnection {
 			contexts.pop();
 		}
 
-		if( socket != null ) {
-			socket.flush();
-			socket.close();
-			socket = null;
-		}
+		terminate();
 
 	}
 
@@ -664,7 +660,7 @@ public class XMPPClientConnection {
 
 		stopListening();
 
-		packetListenerThread = new Thread() {
+		packetListenerThread = new Thread( String.format( "%s:%s", packetListener.getClass().getName(), getContext().fullJID ) ) {
 
 			@Override
 			public void run() {
@@ -696,6 +692,14 @@ public class XMPPClientConnection {
 		if( packetListenerThread != null ) {
 			packetListenerThread.interrupt();
 			packetListenerThread = null;
+		}
+	}
+
+	public void terminate() throws IOException {
+		if( socket != null ) {
+			socket.flush();
+			socket.close();
+			socket = null;
 		}
 	}
 
