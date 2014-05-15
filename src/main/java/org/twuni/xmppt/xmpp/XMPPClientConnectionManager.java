@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.twuni.Logger;
 import org.twuni.xmppt.xmpp.XMPPClientConnection.ConnectionListener;
 
 public class XMPPClientConnectionManager implements ConnectionListener {
@@ -11,6 +12,15 @@ public class XMPPClientConnectionManager implements ConnectionListener {
 	private final Map<String, XMPPClientConnection.Builder> managedConnectionBuilders = new HashMap<String, XMPPClientConnection.Builder>();
 	private final Map<XMPPClientConnection, String> connectionsToIDs = new HashMap<XMPPClientConnection, String>();
 	private final Map<String, XMPPClientConnection> idsToConnections = new HashMap<String, XMPPClientConnection>();
+	private final Logger logger;
+
+	public XMPPClientConnectionManager() {
+		this( null );
+	}
+
+	public XMPPClientConnectionManager( Logger logger ) {
+		this.logger = logger;
+	}
 
 	public void connect( String id ) throws IOException {
 		connect( id, null );
@@ -73,12 +83,19 @@ public class XMPPClientConnectionManager implements ConnectionListener {
 	@Override
 	public void onConnected( XMPPClientConnection connection ) {
 		// TODO: Record this event for computing uptime metrics.
+		String id = connectionsToIDs.get( connection );
+		if( logger != null ) {
+			logger.debug( "#onConnected id:%s", id );
+		}
 	}
 
 	@Override
 	public void onDisconnected( XMPPClientConnection connection ) {
 		// TODO: Record this event for computing uptime metrics.
 		String id = connectionsToIDs.get( connection );
+		if( logger != null ) {
+			logger.debug( "#onDisconnected id:%s", id );
+		}
 		connectionsToIDs.remove( connection );
 		idsToConnections.remove( id );
 		if( isManaging( id ) ) {
