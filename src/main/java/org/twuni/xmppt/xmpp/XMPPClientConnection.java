@@ -304,8 +304,6 @@ public class XMPPClientConnection {
 			id = generatePacketID();
 			send( new Presence( id ) );
 
-			nextPacket( Presence.class );
-
 			getContext().resourceName = resourceName;
 
 			dispatchOnConnected();
@@ -476,6 +474,11 @@ public class XMPPClientConnection {
 		return features != null && features.hasFeature( feature );
 	}
 
+	private boolean isResumable() {
+		Context context = getContext();
+		return context != null && context.streamManagementID != null;
+	}
+
 	private boolean isStreamManagementEnabled() {
 		Context context = getContext();
 		return isFeatureAvailable( StreamManagement.class ) && context != null && context.streamManagementEnabled;
@@ -612,7 +615,7 @@ public class XMPPClientConnection {
 				Object response = nextPacket();
 
 				if( !( response instanceof Resumed ) ) {
-					bind( previousContext.resourceName );
+					bind( previousContext.resourceName, previousContext.sessionResumptionTimeout );
 					return;
 				}
 
@@ -639,12 +642,18 @@ public class XMPPClientConnection {
 	}
 
 	public byte [] saveState() throws IOException {
+		if( !isResumable() ) {
+			return null;
+		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		saveState( out );
 		return out.toByteArray();
 	}
 
 	public void saveState( OutputStream out ) throws IOException {
+		if( !isResumable() ) {
+			return;
+		}
 		Context context = getContext();
 		if( context == null ) {
 			context = new Context();
