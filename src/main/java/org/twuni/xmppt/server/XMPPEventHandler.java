@@ -21,6 +21,7 @@ import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.twuni.xmppt.xmpp.ping.Ping;
+import org.twuni.xmppt.xmpp.push.Push;
 import org.twuni.xmppt.xmpp.sasl.SASLAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLFailure;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
@@ -102,18 +103,18 @@ public class XMPPEventHandler extends EventHandler {
 
 	private void onIQ( Connection connection, IQ iq ) {
 
-		Object content = iq.getContent();
+		Object [] contents = iq.getContent();
 
-		if( content instanceof Bind ) {
-			onBind( connection, iq, (Bind) content );
-		}
-
-		if( content instanceof Session ) {
-			onSession( connection, iq, (Session) content );
-		}
-
-		if( content instanceof Ping ) {
-			onPing( connection, iq, (Ping) content );
+		for( Object content : contents ) {
+			if( content instanceof Bind ) {
+				onBind( connection, iq, (Bind) content );
+			} else if( content instanceof Session ) {
+				onSession( connection, iq, (Session) content );
+			} else if( content instanceof Ping ) {
+				onPing( connection, iq, (Ping) content );
+			} else if( content instanceof Push ) {
+				onPush( connection, iq, (Push) content );
+			}
 		}
 
 	}
@@ -124,35 +125,21 @@ public class XMPPEventHandler extends EventHandler {
 	}
 
 	public void onPacket( Connection connection, Object packet ) {
-
 		if( packet instanceof Stream ) {
 			onStream( connection, (Stream) packet );
-		}
-
-		if( packet instanceof SASLAuthentication ) {
+		} else if( packet instanceof SASLAuthentication ) {
 			onSASLAuthentication( connection, (SASLAuthentication) packet );
-		}
-
-		if( packet instanceof IQ ) {
+		} else if( packet instanceof IQ ) {
 			onIQ( connection, (IQ) packet );
-		}
-
-		if( packet instanceof Presence ) {
+		} else if( packet instanceof Presence ) {
 			onPresence( connection, (Presence) packet );
-		}
-
-		if( packet instanceof Message ) {
+		} else if( packet instanceof Message ) {
 			onMessage( connection, (Message) packet );
-		}
-
-		if( packet instanceof AcknowledgmentRequest ) {
+		} else if( packet instanceof AcknowledgmentRequest ) {
 			onAcknowledgmentRequest( connection, (AcknowledgmentRequest) packet );
-		}
-
-		if( packet instanceof Acknowledgment ) {
+		} else if( packet instanceof Acknowledgment ) {
 			onAcknowledgment( connection, (Acknowledgment) packet );
 		}
-
 	}
 
 	private void onPing( Connection connection, IQ iq, Ping ping ) {
@@ -165,6 +152,12 @@ public class XMPPEventHandler extends EventHandler {
 		if( presence.type() == null ) {
 			String jid = jid( connection );
 			send( connection, new Presence( presence.id(), jid, jid ) );
+		}
+	}
+
+	private void onPush( Connection connection, IQ iq, Push push ) {
+		if( iq.expectsResult() ) {
+			send( connection, IQ.result( iq.id(), jid( connection ), "", null ) );
 		}
 	}
 

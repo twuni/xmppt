@@ -187,6 +187,12 @@ public class XMPPClientConnection {
 			return length > 0 ? in.readUTF() : null;
 		}
 
+		public static Context restore( InputStream in ) throws IOException {
+			Context context = new Context();
+			context.load( in );
+			return context;
+		}
+
 		private static void writeUTF( DataOutputStream d, String in ) throws IOException {
 			if( in == null ) {
 				d.writeInt( 0 );
@@ -198,6 +204,7 @@ public class XMPPClientConnection {
 
 		public Stream stream;
 		public Features features;
+		public String location;
 		public int sequence;
 		public int sent;
 		public int received;
@@ -208,6 +215,24 @@ public class XMPPClientConnection {
 		public String serviceName;
 		public String resourceName;
 		public String fullJID;
+
+		public boolean isResumable() {
+			return streamManagementID != null;
+		}
+
+		public void load( Context c ) {
+			location = c.location;
+			sequence = c.sequence;
+			sent = c.sent;
+			received = c.received;
+			sessionResumptionTimeout = c.sessionResumptionTimeout;
+			streamManagementID = c.streamManagementID;
+			streamManagementEnabled = c.streamManagementEnabled;
+			userName = c.userName;
+			serviceName = c.serviceName;
+			resourceName = c.resourceName;
+			fullJID = c.fullJID;
+		}
 
 		public void load( InputStream in ) throws IOException {
 
@@ -223,6 +248,7 @@ public class XMPPClientConnection {
 					sent = d.readInt();
 					received = d.readInt();
 					sessionResumptionTimeout = d.readInt();
+					location = readUTF( d );
 					streamManagementID = readUTF( d );
 					resourceName = readUTF( d );
 					fullJID = readUTF( d );
@@ -235,7 +261,7 @@ public class XMPPClientConnection {
 
 		public String nextID() {
 			sequence++;
-			return String.format( "%s-%d", stream.id(), Integer.valueOf( sequence ) );
+			return String.format( "%s-%d", stream != null ? stream.id() : "_____", Integer.valueOf( sequence ) );
 		}
 
 		public void save( OutputStream out ) throws IOException {
@@ -249,6 +275,7 @@ public class XMPPClientConnection {
 			d.writeInt( received );
 			d.writeInt( sessionResumptionTimeout );
 
+			writeUTF( d, location );
 			writeUTF( d, streamManagementID );
 			writeUTF( d, resourceName );
 			writeUTF( d, fullJID );
@@ -383,15 +410,17 @@ public class XMPPClientConnection {
 			logout();
 		}
 
-		while( !contexts.isEmpty() ) {
-			if( socket != null ) {
-				try {
-					send( getStream().close() );
-				} catch( IOException exception ) {
-					// Socket must be closed. That's fine.
+		synchronized( contexts ) {
+			while( !contexts.isEmpty() ) {
+				if( socket != null ) {
+					try {
+						send( getStream().close() );
+					} catch( IOException exception ) {
+						// Socket must be closed. That's fine.
+					}
 				}
+				contexts.pop();
 			}
-			contexts.pop();
 		}
 
 		terminate();
@@ -432,6 +461,7 @@ public class XMPPClientConnection {
 
 			Context context = getContext();
 
+			context.location = enabled.getLocation();
 			context.streamManagementID = enabled.id();
 			context.streamManagementEnabled = true;
 			context.received = 0;
@@ -476,7 +506,7 @@ public class XMPPClientConnection {
 
 	private boolean isResumable() {
 		Context context = getContext();
-		return context != null && context.streamManagementID != null;
+		return context != null && context.isResumable();
 	}
 
 	private boolean isStreamManagementEnabled() {
@@ -596,12 +626,25 @@ public class XMPPClientConnection {
 	}
 
 	public void restoreState( InputStream in ) throws IOException {
+
+		Context previousContext = Context.restore( in );
+
+		if( !isConnected() ) {
+			// Connect.
+		}
+
+		if( !isAuthenticated() ) {
+			// Authenticate.
+		}
+
 		Context context = getContext();
+
 		if( context == null || context.userName == null ) {
 			throw new IllegalStateException( "The stream must be authenticated before attempting to restore state." );
 		}
-		context.load( in );
-		resume( context );
+
+		resume( previousContext );
+
 	}
 
 	private void resume( Context previousContext ) throws IOException {
@@ -609,6 +652,11 @@ public class XMPPClientConnection {
 		if( isFeatureAvailable( StreamManagement.class ) ) {
 
 			if( previousContext != null ) {
+
+				if( !previousContext.isResumable() ) {
+					bind( previousContext.resourceName, previousContext.sessionResumptionTimeout );
+					return;
+				}
 
 				send( new Resume( previousContext.streamManagementID, previousContext.received ) );
 
@@ -622,10 +670,10 @@ public class XMPPClientConnection {
 				Context context = getContext();
 				Resumed resumed = (Resumed) response;
 
+				context.load( previousContext );
+
 				context.streamManagementEnabled = true;
 				context.streamManagementID = resumed.getPreviousID();
-				context.received = previousContext.received;
-				context.sent = previousContext.sent;
 
 				dispatchOnConnected();
 

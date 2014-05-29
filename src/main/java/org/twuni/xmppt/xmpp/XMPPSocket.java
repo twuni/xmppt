@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.twuni.Logger;
@@ -13,6 +14,7 @@ import org.twuni.nio.server.Writable;
 import org.twuni.xmppt.client.SocketFactory;
 import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xml.XMLElementParser;
+import org.twuni.xmppt.xml.XMLEntity;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 
 public class XMPPSocket implements Closeable, Flushable, Writable {
@@ -91,6 +93,21 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 		}
 
 		List<XMLElement> elements = XML.parse( inputBuffer, 0, size );
+		List<XMLElement> expanded = new ArrayList<XMLElement>();
+
+		for( int i = 0; i < elements.size(); i++ ) {
+			XMLElement element = elements.get( i );
+			expanded.add( element );
+			if( "stream".equals( element.name ) ) {
+				for( XMLEntity child : element.children ) {
+					if( child instanceof XMLElement ) {
+						expanded.add( (XMLElement) child );
+					}
+				}
+			}
+		}
+
+		elements = expanded;
 
 		synchronized( guard ) {
 

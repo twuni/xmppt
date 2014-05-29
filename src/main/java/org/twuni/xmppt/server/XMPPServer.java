@@ -32,6 +32,7 @@ public class XMPPServer {
 		}
 
 		try {
+			System.out.println( String.format( "----- [%2$s:%1$d] -----", Integer.valueOf( port ), serviceName ) );
 			Acceptor acceptor = new XMPPAcceptor( port, serviceName, new AutomaticAuthenticator() );
 			acceptor.run();
 			acceptor.close();
