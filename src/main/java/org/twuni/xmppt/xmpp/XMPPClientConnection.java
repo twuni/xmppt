@@ -561,6 +561,15 @@ public class XMPPClientConnection {
 		}
 	}
 
+	public void markForRetransmission( int count ) {
+		Context context = getContext();
+		if( context != null ) {
+			if( count <= context.sent ) {
+				context.sent -= count;
+			}
+		}
+	}
+
 	protected Object next() throws IOException {
 		return ok( socket.next() );
 	}
