@@ -26,13 +26,13 @@ import java.nio.charset.Charset;
  * </p>
  * <p>
  * The class can be parameterized in the following manner with various constructors:
+ * </p>
  * <ul>
  * <li>URL-safe mode: Default off.</li>
  * <li>Line length: Default 76. Line length that aren't multiples of 4 will still essentially end up
  * being multiples of 4 in the encoded data.
  * <li>Line separator: Default is CRLF ("\r\n")</li>
  * </ul>
- * </p>
  * <p>
  * Since this class operates directly on byte streams, and not character streams, it is hard-coded
  * to only encode/decode character encodings which are compatible with the lower 127 ASCII chart
@@ -711,6 +711,7 @@ public class Base64 {
 	 *            minimum spare space required
 	 * @param context
 	 *            the context to be used
+	 * @return the buffer attached to the given context
 	 */
 	protected static byte [] ensureBufferSize( final int size, final Context context ) {
 		if( context.buffer == null || context.buffer.length < context.pos + size ) {
@@ -954,7 +955,7 @@ public class Base64 {
 	 * 
 	 * @param lineLength
 	 *            Each line of encoded data will be at most of the given length (rounded down to
-	 *            nearest multiple of 4). If lineLength <= 0, then the output will not be divided
+	 *            nearest multiple of 4). If lineLength &lt;= 0, then the output will not be divided
 	 *            into lines (chunks). Ignored when decoding.
 	 * @since 1.4
 	 */
@@ -978,7 +979,7 @@ public class Base64 {
 	 * 
 	 * @param lineLength
 	 *            Each line of encoded data will be at most of the given length (rounded down to
-	 *            nearest multiple of 4). If lineLength <= 0, then the output will not be divided
+	 *            nearest multiple of 4). If lineLength &lt;= 0, then the output will not be divided
 	 *            into lines (chunks). Ignored when decoding.
 	 * @param lineSeparator
 	 *            Each line of encoded data will end with this sequence of bytes.
@@ -1006,7 +1007,7 @@ public class Base64 {
 	 * 
 	 * @param lineLength
 	 *            Each line of encoded data will be at most of the given length (rounded down to
-	 *            nearest multiple of 4). If lineLength <= 0, then the output will not be divided
+	 *            nearest multiple of 4). If lineLength &lt;= 0, then the output will not be divided
 	 *            into lines (chunks). Ignored when decoding.
 	 * @param lineSeparator
 	 *            Each line of encoded data will end with this sequence of bytes.
@@ -1372,7 +1373,7 @@ public class Base64 {
 	 * @param pArray
 	 *            byte[] array which will later be encoded
 	 * @return amount of space needed to encoded the supplied array. Returns a long since a max-len
-	 *         array will require > Integer.MAX_VALUE
+	 *         array will require &gt; Integer.MAX_VALUE
 	 */
 	public long getEncodedLength( final byte [] pArray ) {
 		// Calculate non-chunked size - rounded up to allow for padding
