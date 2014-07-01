@@ -16,6 +16,7 @@ import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xml.XMLElementParser;
 import org.twuni.xmppt.xml.XMLEntity;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
+import org.twuni.xmppt.xmpp.stream.Stream;
 
 public class XMPPSocket implements Closeable, Flushable, Writable {
 
@@ -98,7 +99,7 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 		for( int i = 0; i < elements.size(); i++ ) {
 			XMLElement element = elements.get( i );
 			expanded.add( element );
-			if( "stream".equals( element.name ) ) {
+			if( Stream.ELEMENT_NAME.equals( element.name ) ) {
 				for( XMLEntity child : element.children ) {
 					if( child instanceof XMLElement ) {
 						expanded.add( (XMLElement) child );
