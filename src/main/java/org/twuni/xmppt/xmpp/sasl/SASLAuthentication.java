@@ -19,17 +19,24 @@ public class SASLAuthentication {
 		this.mechanism = mechanism;
 	}
 
-	public String getMechanism() {
-		return mechanism;
-	}
-
 	protected Object getContent() {
 		return null;
 	}
 
+	public String getMechanism() {
+		return mechanism;
+	}
+
 	@Override
 	public String toString() {
-		return new XMLBuilder( ELEMENT_NAME ).attribute( XMLElement.ATTRIBUTE_NAMESPACE, SASLAuthentication.NAMESPACE ).attribute( ATTRIBUTE_MECHANISM, mechanism ).content( getContent() );
+
+		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );
+
+		xml.attribute( XMLElement.ATTRIBUTE_NAMESPACE, SASLAuthentication.NAMESPACE );
+		xml.attribute( ATTRIBUTE_MECHANISM, mechanism );
+
+		return xml.content( getContent() );
+
 	}
 
 }
