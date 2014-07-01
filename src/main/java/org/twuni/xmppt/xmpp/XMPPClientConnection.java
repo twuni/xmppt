@@ -480,6 +480,10 @@ public class XMPPClientConnection {
 		return contexts.isEmpty() ? null : contexts.peek();
 	}
 
+	protected <T> T getFeature( Class<T> featureType ) {
+		return getFeatures().getFeature( featureType );
+	}
+
 	protected Features getFeatures() {
 		Context context = getContext();
 		return context != null ? context.features : null;
@@ -518,7 +522,7 @@ public class XMPPClientConnection {
 
 		if( isFeatureAvailable( SASLMechanisms.class ) ) {
 
-			SASLMechanisms mechanisms = getFeatures().getFeature( SASLMechanisms.class );
+			SASLMechanisms mechanisms = getFeature( SASLMechanisms.class );
 
 			if( mechanisms.hasMechanism( SASLPlainAuthentication.MECHANISM ) ) {
 
