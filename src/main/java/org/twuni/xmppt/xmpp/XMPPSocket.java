@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.twuni.Logger;
@@ -79,21 +80,30 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 	private void consumeNextBytes() throws IOException {
 
 		InputStream in = socket.getInputStream();
-		int size = in.read( inputBuffer, 0, inputBuffer.length );
+
+		byte [] buffer = inputBuffer;
+
+		int size = in.read( buffer, 0, buffer.length );
 
 		if( size <= 0 ) {
 			return;
 		}
 
-		if( size >= inputBuffer.length ) {
-			// FIXME: There's probably more to read.
+		while( buffer[size - 1] != '>' ) {
+			if( size >= buffer.length ) {
+				buffer = Arrays.copyOf( buffer, buffer.length * 2 );
+				if( logger != null ) {
+					logger.debug( "BUFR(%d)", Integer.valueOf( buffer.length ) );
+				}
+			}
+			size += in.read( buffer, size, buffer.length - size );
 		}
 
 		if( logger != null ) {
-			logger.info( "RECV %s", new String( inputBuffer, 0, size ) );
+			logger.info( "RECV %s", new String( buffer, 0, size ) );
 		}
 
-		List<XMLElement> elements = XML.parse( inputBuffer, 0, size );
+		List<XMLElement> elements = XML.parse( buffer, 0, size );
 		List<XMLElement> expanded = new ArrayList<XMLElement>();
 
 		for( int i = 0; i < elements.size(); i++ ) {

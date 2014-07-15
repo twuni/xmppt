@@ -18,11 +18,11 @@ public class XMLElementParser {
 		END_ATTRIBUTE
 	}
 
+	private final Map<String, String> namespaces = new HashMap<String, String>();
+
 	public List<XMLElement> parse( byte [] in ) {
 		return parse( in, 0, in.length );
 	}
-
-	private final Map<String, String> namespaces = new HashMap<String, String>();
 
 	public List<XMLElement> parse( byte [] in, int offset, int length ) {
 
