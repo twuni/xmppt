@@ -1,9 +1,11 @@
 package org.twuni.xmppt;
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.twuni.xmppt.util.Base64;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Message;
@@ -70,6 +72,16 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		assertEquals( IQ.TYPE_RESULT, received.type() );
 		assertEquals( sent.id(), received.id() );
 		assertNotNull( received.getContent( Push.class ) );
+		goOffline();
+	}
+
+	@Test
+	public void send_shouldAllowLargeMessages() throws IOException {
+		goOnline( "send-large-message" );
+		byte [] buffer = new byte [48 * 1024];
+		new Random().nextBytes( buffer );
+		send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>This is great.</body><x xmlns='http://silentcircle.com/'>?SCIMP:" + Base64.encodeBase64String( buffer ) + ".</x>" ) );
+		assertPacketsSentWereReceived();
 		goOffline();
 	}
 
