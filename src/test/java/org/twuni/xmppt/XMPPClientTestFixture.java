@@ -67,10 +67,12 @@ public class XMPPClientTestFixture extends Assert {
 			public void onPacketReceived( Object packet ) {
 				if( packet instanceof AcknowledgmentRequest ) {
 					try {
-						send( new Acknowledgment( getContext().received ) );
+						sendAcknowledgment();
 					} catch( IOException exception ) {
 						// Ignore.
 					}
+				} else {
+					ok( packet );
 				}
 			}
 
@@ -434,6 +436,10 @@ public class XMPPClientTestFixture extends Assert {
 				}
 			}
 		}
+	}
+
+	protected void sendAcknowledgment() throws IOException {
+		send( new Acknowledgment( getContext().received ) );
 	}
 
 }
