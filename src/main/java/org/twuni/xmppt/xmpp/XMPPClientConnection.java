@@ -46,6 +46,7 @@ public class XMPPClientConnection {
 		private String host = "localhost";
 		private int port = 5222;
 		private int sessionResumptionTimeout = 300;
+		private boolean streamManagementRequested = true;
 		private boolean secure = false;
 		private Logger logger;
 		private boolean log = true;
@@ -67,6 +68,7 @@ public class XMPPClientConnection {
 
 			XMPPClientConnection connection = new XMPPClientConnection();
 
+			connection.setStreamManagementRequested( streamManagementRequested );
 			connection.setAcknowledgmentListener( acknowledgmentListener );
 			connection.setConnectionListener( connectionListener );
 
@@ -122,6 +124,15 @@ public class XMPPClientConnection {
 
 		public Builder port( int port ) {
 			this.port = port;
+			return this;
+		}
+
+		public Builder requestStreamManagement() {
+			return requestStreamManagement( true );
+		}
+
+		public Builder requestStreamManagement( boolean streamManagementRequested ) {
+			this.streamManagementRequested = streamManagementRequested;
 			return this;
 		}
 
@@ -297,6 +308,7 @@ public class XMPPClientConnection {
 	private Thread packetListenerThread;
 	private AcknowledgmentListener acknowledgmentListener;
 	private ConnectionListener connectionListener;
+	private boolean streamManagementRequested = true;
 
 	public void bind( String resourceName ) throws IOException {
 		bind( resourceName, 0 );
@@ -453,7 +465,7 @@ public class XMPPClientConnection {
 
 	protected void enableStreamManagement( int sessionResumptionTimeout ) throws IOException {
 
-		if( isFeatureAvailable( StreamManagement.class ) ) {
+		if( streamManagementRequested && isFeatureAvailable( StreamManagement.class ) ) {
 
 			send( new Enable( sessionResumptionTimeout, sessionResumptionTimeout != 0 ) );
 
@@ -515,7 +527,7 @@ public class XMPPClientConnection {
 
 	private boolean isStreamManagementEnabled() {
 		Context context = getContext();
-		return isFeatureAvailable( StreamManagement.class ) && context != null && context.streamManagementEnabled;
+		return streamManagementRequested && isFeatureAvailable( StreamManagement.class ) && context != null && context.streamManagementEnabled;
 	}
 
 	public void login( String username, String password ) throws IOException {
@@ -734,7 +746,9 @@ public class XMPPClientConnection {
 	}
 
 	public void sendAcknowledgment() throws IOException {
-		send( new Acknowledgment( getContext().received ) );
+		if( isStreamManagementEnabled() ) {
+			send( new Acknowledgment( getContext().received ) );
+		}
 	}
 
 	public void setAcknowledgmentListener( AcknowledgmentListener acknowledgmentListener ) {
@@ -743,6 +757,10 @@ public class XMPPClientConnection {
 
 	public void setConnectionListener( ConnectionListener connectionListener ) {
 		this.connectionListener = connectionListener;
+	}
+
+	public void setStreamManagementRequested( boolean streamManagementRequested ) {
+		this.streamManagementRequested = streamManagementRequested;
 	}
 
 	public void startListening( final PacketListener packetListener ) {

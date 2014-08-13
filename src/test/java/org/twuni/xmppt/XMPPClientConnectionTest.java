@@ -171,6 +171,14 @@ public class XMPPClientConnectionTest {
 
 	}
 
+	@Test
+	public void sendAcknowledgment_shouldDoNothing_whenStreamManagementNotRequested() throws IOException {
+		XMPPClientConnection connection = alice().requestStreamManagement( false ).build();
+		connection.sendAcknowledgment();
+		// TODO: How to programatically verify this?
+		connection.disconnect();
+	}
+
 	@Before
 	public void startTestServer() {
 		SimpleAuthenticator authenticator = new SimpleAuthenticator();
