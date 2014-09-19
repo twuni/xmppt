@@ -792,7 +792,7 @@ public class XMPPClientConnection {
 							processPacket( packetListener, packet );
 						}
 
-					} catch( IOException exception ) {
+					} catch( Throwable exception ) {
 
 						if( !isInterrupted() ) {
 							packetListener.onException( XMPPClientConnection.this, exception );
