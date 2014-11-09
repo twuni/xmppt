@@ -10,7 +10,6 @@ import org.twuni.xmppt.xmpp.PacketTransformerGroup;
 import org.twuni.xmppt.xmpp.bind.BindExtension;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesExtension;
 import org.twuni.xmppt.xmpp.ping.PingExtension;
-import org.twuni.xmppt.xmpp.push.PushExtension;
 import org.twuni.xmppt.xmpp.sasl.SASLExtension;
 import org.twuni.xmppt.xmpp.session.SessionExtension;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
@@ -32,7 +31,6 @@ public class XMPPPacketConfiguration {
 			config.add( new SessionExtension() );
 			config.add( new CapabilitiesExtension() );
 			config.add( new StreamManagement() );
-			config.add( new PushExtension() );
 			config.add( new ErrorExtension() );
 
 			defaultConfiguration = config.build();

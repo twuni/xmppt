@@ -21,7 +21,6 @@ import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.core.XMPPPacketConfiguration;
 import org.twuni.xmppt.xmpp.ping.Ping;
-import org.twuni.xmppt.xmpp.push.Push;
 import org.twuni.xmppt.xmpp.sasl.SASLAuthentication;
 import org.twuni.xmppt.xmpp.sasl.SASLFailure;
 import org.twuni.xmppt.xmpp.sasl.SASLMechanisms;
@@ -112,8 +111,6 @@ public class XMPPEventHandler extends EventHandler {
 				onSession( connection, iq, (Session) content );
 			} else if( content instanceof Ping ) {
 				onPing( connection, iq, (Ping) content );
-			} else if( content instanceof Push ) {
-				onPush( connection, iq, (Push) content );
 			}
 		}
 
@@ -152,12 +149,6 @@ public class XMPPEventHandler extends EventHandler {
 		if( presence.type() == null ) {
 			String jid = jid( connection );
 			send( connection, new Presence( presence.id(), jid, jid ) );
-		}
-	}
-
-	private void onPush( Connection connection, IQ iq, Push push ) {
-		if( iq.expectsResult() ) {
-			send( connection, IQ.result( iq.id(), jid( connection ), "", null ) );
 		}
 	}
 
