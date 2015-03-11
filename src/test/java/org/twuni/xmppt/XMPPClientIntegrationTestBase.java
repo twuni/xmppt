@@ -12,15 +12,13 @@ import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.ping.Ping;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
-import org.twuni.xmppt.xmpp.stream.StreamError;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixture {
 
-	@Test
+	@Test( expected = IOException.class )
 	public void connect_shouldProduceError_ifServiceNameUnknown() throws IOException {
-		StreamError error = connectWithError( getHost(), getPort(), isSecure(), String.format( "%s-unknown", getServiceName() ) );
-		assertNotNull( error );
+		connect( getHost(), getPort(), isSecure(), String.format( "%s-unknown", getServiceName() ) );
 	}
 
 	@Test( expected = IOException.class )

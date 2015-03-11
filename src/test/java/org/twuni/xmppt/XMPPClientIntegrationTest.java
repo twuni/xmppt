@@ -10,10 +10,12 @@ import java.util.TimerTask;
 import org.junit.After;
 import org.junit.Before;
 import org.twuni.nio.server.auth.SimpleAuthenticator;
+import org.twuni.xmppt.server.XMPPAcceptor;
 
 public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 
-	private XMPPTestServer server;
+	private Thread asyncTestServer;
+	private XMPPTestServer syncTestServer;
 	private ResourceBundle properties;
 	private Timer failsafe;
 
@@ -55,6 +57,10 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 		return properties.getString( "user_name" );
 	}
 
+	protected boolean isAsync() {
+		return Boolean.parseBoolean( properties.getString( "async" ) );
+	}
+
 	private boolean isLocal() {
 		try {
 			return InetAddress.getByName( getHost() ).isLoopbackAddress();
@@ -68,14 +74,31 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 		return Boolean.parseBoolean( properties.getString( "secure" ) );
 	}
 
+	private void startLocalAsyncTestServer( SimpleAuthenticator authenticator ) {
+		try {
+			asyncTestServer = new Thread( new XMPPAcceptor( getPort(), getServiceName(), authenticator ) );
+		} catch( IOException ignore ) {
+			// Ignore this.
+		}
+		asyncTestServer.start();
+	}
+
+	private void startLocalSyncTestServer( SimpleAuthenticator authenticator ) {
+		syncTestServer = new XMPPTestServer( getServiceName(), authenticator, getPort(), isSecure() );
+		syncTestServer.startListening();
+	}
+
 	@Before
 	public void startTestServer() {
 		properties = ResourceBundle.getBundle( getClass().getName() );
 		if( isLocal() ) {
 			SimpleAuthenticator authenticator = new SimpleAuthenticator();
 			authenticator.put( getUsername(), getPassword() );
-			server = new XMPPTestServer( getServiceName(), authenticator, getPort(), isSecure() );
-			server.startListening();
+			if( isAsync() ) {
+				startLocalAsyncTestServer( authenticator );
+			} else {
+				startLocalSyncTestServer( authenticator );
+			}
 		}
 		failsafe = new Timer( true );
 		failsafe.schedule( new TimerTask() {
@@ -92,14 +115,32 @@ public class XMPPClientIntegrationTest extends XMPPClientIntegrationTestBase {
 		}, getTimeout() );
 	}
 
+	private void stopLocalAsyncTestServer() {
+		asyncTestServer.interrupt();
+		try {
+			asyncTestServer.join();
+		} catch( InterruptedException ignore ) {
+			// Ignore.
+		}
+		asyncTestServer = null;
+	}
+
+	private void stopLocalSyncTestServer() {
+		syncTestServer.stopListening();
+		syncTestServer = null;
+	}
+
 	@After
 	public void stopTestServer() {
 		failsafe.cancel();
 		failsafe.purge();
 		failsafe = null;
 		if( isLocal() ) {
-			server.stopListening();
-			server = null;
+			if( isAsync() ) {
+				stopLocalAsyncTestServer();
+			} else {
+				stopLocalSyncTestServer();
+			}
 		}
 	}
 

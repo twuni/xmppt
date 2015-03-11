@@ -12,6 +12,7 @@ import org.twuni.xmppt.xml.XMLElement;
 import org.twuni.xmppt.xmpp.PacketTransformer;
 import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
+import org.twuni.xmppt.xmpp.core.Failure;
 import org.twuni.xmppt.xmpp.core.Features;
 import org.twuni.xmppt.xmpp.core.IQ;
 import org.twuni.xmppt.xmpp.core.Message;
@@ -137,6 +138,10 @@ public class XMPPEventHandler extends XMLEventHandler {
 
 	public void onEnable( Connection connection, Enable enable ) {
 		State s = state( connection );
+		if( !s.isBound() ) {
+			send( connection, new Failure( StreamManagement.NAMESPACE ) );
+			return;
+		}
 		s.sent = 0;
 		s.received = 0;
 		s.streamManagementID = connection.id();
@@ -225,7 +230,10 @@ public class XMPPEventHandler extends XMLEventHandler {
 
 	public void onStream( Connection connection, Stream stream ) {
 		if( !serviceName.equals( stream.to() ) ) {
+			Stream s = new Stream( null, serviceName, null, "stream", "1.0" );
+			send( connection, s );
 			send( connection, new StreamError( new XMLElement( "host-unknown" ) ) );
+			send( connection, s.close() );
 			return;
 		}
 		State s = state( connection );
