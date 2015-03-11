@@ -14,34 +14,38 @@ import org.twuni.Logger;
  */
 public class Dispatcher implements Runnable, Closeable {
 
-	private static final Logger LOG = new Logger( Dispatcher.class.getName() );
+	private static Logger defaultLogger() {
+		return new Logger( Dispatcher.class.getName() );
+	}
 
+	private final Logger log;
 	private final Object guard = new Object();
 	private final Selector selector;
 	private final EventHandler eventHandler;
 	private boolean running;
 
-	/**
-	 * @param selector
-	 * @param eventHandler
-	 */
 	public Dispatcher( Selector selector, EventHandler eventHandler ) {
+		this( selector, eventHandler, defaultLogger() );
+	}
+
+	public Dispatcher( Selector selector, EventHandler eventHandler, Logger logger ) {
 		this.selector = selector;
 		this.eventHandler = eventHandler;
+		log = logger;
 	}
 
 	@Override
 	public void close() throws IOException {
-		LOG.info( "#%s", "close" );
+		log.info( "#%s", "close" );
 		running = false;
 	}
 
 	protected void onException( Throwable exception ) {
-		LOG.info( "#%s(%s) %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
+		log.info( "#%s(%s) %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
 	}
 
 	public void register( Connection connection ) throws ClosedChannelException {
-		LOG.info( "#%s(%s)", "register", connection.getClass().getName() );
+		log.info( "#%s(%s)", "register", connection.getClass().getName() );
 		synchronized( guard ) {
 			selector.wakeup();
 			connection.getClient().register( selector, SelectionKey.OP_READ, connection );

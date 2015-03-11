@@ -17,16 +17,28 @@ public class Transporter {
 
 	}
 
+	private static Logger defaultLogger() {
+		return new Logger( Transporter.class.getName() );
+	}
+
 	private static void send( Writable target, Object object ) throws IOException {
 		if( target.write( object.toString().getBytes() ) < 0 ) {
 			throw new IOException( "Packet not sent." );
 		}
 	}
 
-	private static final Logger LOG = new Logger( Transporter.class.getName() );
+	private final Logger log;
 	private final Map<String, Writable> targets = new HashMap<String, Writable>();
 
 	private final State state = new State();
+
+	public Transporter() {
+		this( defaultLogger() );
+	}
+
+	public Transporter( Logger logger ) {
+		log = logger;
+	}
 
 	public void available( Writable target, String targetID ) {
 		available( target, targetID, null );
@@ -70,9 +82,9 @@ public class Transporter {
 							}
 							it.remove();
 						} catch( IOException exception ) {
-							LOG.info( "DELAY %s", packet );
+							log.info( "DELAY %s", packet );
 						} catch( BufferOverflowException exception ) {
-							LOG.info( "DELAY %s", packet );
+							log.info( "DELAY %s", packet );
 						}
 					}
 				}

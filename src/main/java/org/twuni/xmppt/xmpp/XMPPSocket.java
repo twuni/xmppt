@@ -32,9 +32,12 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 
 	}
 
+	private static Logger defaultLogger() {
+		return new Logger( XMPPSocket.class.getName() );
+	}
+
 	public static final int DEFAULT_INPUT_BUFFER_SIZE = 32 * 1024;
 
-	private static final Logger DEFAULT_LOGGER = new Logger( XMPPSocket.class.getName() );
 	private static final XMLElementParser XML = new XMLElementParser();
 	private static final PacketTransformer TRANSFORMER = XMPPPacketConfiguration.getDefault();
 
@@ -42,32 +45,57 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 	private final Socket socket;
 	private final byte [] inputBuffer;
 
-	private Logger logger = DEFAULT_LOGGER;
+	private Logger log;
 	private Node head;
 
 	public XMPPSocket( Socket socket ) {
-		this( socket, DEFAULT_INPUT_BUFFER_SIZE );
+		this( socket, defaultLogger() );
 	}
 
 	public XMPPSocket( Socket socket, int inputBufferSize ) {
+		this( socket, inputBufferSize, defaultLogger() );
+	}
+
+	public XMPPSocket( Socket socket, int inputBufferSize, Logger logger ) {
 		this.socket = socket;
 		inputBuffer = new byte [inputBufferSize];
+		log = logger;
+	}
+
+	public XMPPSocket( Socket socket, Logger logger ) {
+		this( socket, DEFAULT_INPUT_BUFFER_SIZE, logger );
 	}
 
 	public XMPPSocket( SocketFactory socketFactory, String host, int port ) throws IOException {
-		this( socketFactory.createSocket( host, port ) );
+		this( socketFactory, host, port, defaultLogger() );
 	}
 
 	public XMPPSocket( SocketFactory socketFactory, String host, int port, boolean secure ) throws IOException {
-		this( socketFactory.createSocket( host, port, secure ) );
+		this( socketFactory, host, port, secure, defaultLogger() );
+	}
+
+	public XMPPSocket( SocketFactory socketFactory, String host, int port, boolean secure, Logger logger ) throws IOException {
+		this( socketFactory.createSocket( host, port, secure ), logger );
+	}
+
+	public XMPPSocket( SocketFactory socketFactory, String host, int port, Logger logger ) throws IOException {
+		this( socketFactory.createSocket( host, port ), logger );
 	}
 
 	public XMPPSocket( String host, int port ) throws IOException {
-		this( SocketFactory.getInstance(), host, port );
+		this( host, port, defaultLogger() );
 	}
 
 	public XMPPSocket( String host, int port, boolean secure ) throws IOException {
-		this( SocketFactory.getInstance(), host, port, secure );
+		this( host, port, secure, defaultLogger() );
+	}
+
+	public XMPPSocket( String host, int port, boolean secure, Logger logger ) throws IOException {
+		this( SocketFactory.getInstance(), host, port, secure, logger );
+	}
+
+	public XMPPSocket( String host, int port, Logger logger ) throws IOException {
+		this( SocketFactory.getInstance(), host, port, logger );
 	}
 
 	@Override
@@ -92,15 +120,15 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 		while( buffer[size - 1] != '>' ) {
 			if( size >= buffer.length ) {
 				buffer = Arrays.copyOf( buffer, buffer.length * 2 );
-				if( logger != null ) {
-					logger.debug( "BUFR(%d)", Integer.valueOf( buffer.length ) );
+				if( log != null ) {
+					log.debug( "BUFR(%d)", Integer.valueOf( buffer.length ) );
 				}
 			}
 			size += in.read( buffer, size, buffer.length - size );
 		}
 
-		if( logger != null ) {
-			logger.info( "RECV %s", new String( buffer, 0, size ) );
+		if( log != null ) {
+			log.info( "RECV %s", new String( buffer, 0, size ) );
 		}
 
 		List<XMLElement> elements = XML.parse( buffer, 0, size );
@@ -208,7 +236,7 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 	}
 
 	public void setLogger( Logger logger ) {
-		this.logger = logger;
+		log = logger;
 	}
 
 	@Override
@@ -232,8 +260,8 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 	public void write( Object packet ) throws IOException {
 		OutputStream out = socket.getOutputStream();
 		String packetString = packet.toString();
-		if( logger != null ) {
-			logger.info( "SEND %s", packetString );
+		if( log != null ) {
+			log.info( "SEND %s", packetString );
 		}
 		byte [] buffer = packetString.getBytes();
 		out.write( buffer, 0, buffer.length );
