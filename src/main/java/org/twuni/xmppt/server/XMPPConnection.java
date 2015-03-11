@@ -8,20 +8,34 @@ import org.twuni.nio.server.EventHandler;
 
 public class XMPPConnection extends Connection {
 
-	public XMPPConnection( SocketChannel client, Dispatcher dispatcher, EventHandler eventHandler, int inputBufferSize, int outputBufferSize ) {
-		super( client, dispatcher, eventHandler, inputBufferSize, outputBufferSize );
-	}
-
-	public XMPPConnection( SocketChannel client, Dispatcher dispatcher, EventHandler eventHandler ) {
-		super( client, dispatcher, eventHandler );
-	}
-
 	public static class State {
 
 		public int sent;
 		public int received;
 		public String username;
 		public String resource;
+		public String streamID;
+		public String serviceName;
+		public String sessionID;
+		public boolean available;
+		public String streamManagementID;
+		public boolean streamManagementEnabled;
+
+		public boolean hasSession() {
+			return sessionID != null;
+		}
+
+		public boolean isAvailable() {
+			return available;
+		}
+
+		public boolean isBound() {
+			return resource != null;
+		}
+
+		public boolean isStreamManagementEnabled() {
+			return streamManagementEnabled;
+		}
 
 		public String jid( String serviceName ) {
 			return String.format( "%s@%s", username, serviceName );
@@ -34,6 +48,14 @@ public class XMPPConnection extends Connection {
 	}
 
 	private final State state = new State();
+
+	public XMPPConnection( SocketChannel client, Dispatcher dispatcher, EventHandler eventHandler ) {
+		super( client, dispatcher, eventHandler );
+	}
+
+	public XMPPConnection( SocketChannel client, Dispatcher dispatcher, EventHandler eventHandler, int inputBufferSize, int outputBufferSize ) {
+		super( client, dispatcher, eventHandler, inputBufferSize, outputBufferSize );
+	}
 
 	@Override
 	public Object state() {

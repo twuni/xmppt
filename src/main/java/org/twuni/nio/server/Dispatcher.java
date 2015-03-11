@@ -36,16 +36,16 @@ public class Dispatcher implements Runnable, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		log.info( "#%s", "close" );
+		log.info( "CLOSE" );
 		running = false;
 	}
 
 	protected void onException( Throwable exception ) {
-		log.info( "#%s(%s) %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
+		log.info( "ERROR T/%s %s", exception.getClass().getName(), exception.getLocalizedMessage() );
 	}
 
 	public void register( Connection connection ) throws ClosedChannelException {
-		log.info( "#%s(%s)", "register", connection.getClass().getName() );
+		log.info( "REGISTER T/%s C/%s", connection.getClass().getName(), connection.id() );
 		synchronized( guard ) {
 			selector.wakeup();
 			connection.getClient().register( selector, SelectionKey.OP_READ, connection );
@@ -94,12 +94,12 @@ public class Dispatcher implements Runnable, Closeable {
 					continue;
 				}
 
-				if( key.isValid() && key.isReadable() ) {
-					eventHandler.onReadRequested( connection );
-				}
-
-				if( key.isValid() && key.isWritable() ) {
-					eventHandler.onWriteRequested( connection );
+				if( key.isValid() ) {
+					if( key.isReadable() ) {
+						eventHandler.onReadRequested( connection );
+					} else if( key.isWritable() ) {
+						eventHandler.onWriteRequested( connection );
+					}
 				}
 
 			}

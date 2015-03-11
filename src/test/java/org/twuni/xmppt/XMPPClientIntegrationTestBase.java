@@ -12,13 +12,15 @@ import org.twuni.xmppt.xmpp.core.Message;
 import org.twuni.xmppt.xmpp.core.Presence;
 import org.twuni.xmppt.xmpp.ping.Ping;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
+import org.twuni.xmppt.xmpp.stream.StreamError;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixture {
 
-	@Test( expected = IOException.class )
+	@Test
 	public void connect_shouldProduceError_ifServiceNameUnknown() throws IOException {
-		connect( getHost(), getPort(), isSecure(), String.format( "%s-unknown", getServiceName() ) );
+		StreamError error = connectWithError( getHost(), getPort(), isSecure(), String.format( "%s-unknown", getServiceName() ) );
+		assertNotNull( error );
 	}
 
 	@Test( expected = IOException.class )
@@ -67,7 +69,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOnline( "send-large-message" );
 		byte [] buffer = new byte [48 * 1024];
 		new Random().nextBytes( buffer );
-		send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>This is great.</body><x xmlns='http://silentcircle.com/'>?SCIMP:" + Base64.encodeBase64String( buffer ) + ".</x>" ) );
+		send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), "<body>" + Base64.encodeBase64String( buffer ) + "</body>" ) );
 		assertPacketsSentWereReceived();
 		goOffline();
 	}
@@ -104,12 +106,13 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		goOnline( "send-n-messages-expect-ack-n" );
 
 		int n = 10;
+
 		for( int i = 0; i < n; i++ ) {
 			send( new Message( generatePacketID(), Message.TYPE_CHAT, null, getSimpleJID(), String.format( "<body>This message is at index %d.</body>", Integer.valueOf( i ) ) ) );
 		}
 
 		for( int i = 0; i < n; i++ ) {
-			nextPacket();// Ignore the messages we have sent.
+			nextPacket();
 		}
 
 		assertPacketsSentWereReceived();
@@ -126,8 +129,8 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		Context previousContext = getContext();
 
 		invokeConnectionLoss();
-		// FIXME: This triggers a half-open TCP socket on the server side, which on a
-		// single-connection test server, prohibits further connections.
+		// FIXME: This triggers a half-open TCP socket on the server side, which
+		// on a single-connection test server, prohibits further connections.
 
 		goOnline( previousContext );
 		goOffline();

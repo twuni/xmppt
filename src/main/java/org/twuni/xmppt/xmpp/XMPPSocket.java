@@ -162,7 +162,8 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 
 			for( int i = 0; i < count; i++ ) {
 
-				Object packet = TRANSFORMER.transform( elements.get( i ) );
+				XMLElement element = elements.get( i );
+				Object packet = TRANSFORMER.transform( element );
 
 				if( head == null ) {
 					head = new Node( packet );

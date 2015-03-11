@@ -286,7 +286,8 @@ public class XMPPTestServer implements Runnable {
 			return;
 		}
 
-		// TODO: Let's find out what our capabilities are, and let's compute the hash for real.
+		// TODO: Let's find out what our capabilities are, and let's compute the
+		// hash for real.
 		CapabilitiesHash capabilities = new CapabilitiesHash( serviceName, CapabilitiesHash.HASH_SHA1, "yKzHls8GRkBRR5a35o/IZmOtpBU=" );
 
 		while( running ) {

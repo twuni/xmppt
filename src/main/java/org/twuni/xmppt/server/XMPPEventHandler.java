@@ -1,17 +1,14 @@
 package org.twuni.xmppt.server;
 
 import java.nio.BufferOverflowException;
-import java.util.List;
 
 import org.twuni.Logger;
 import org.twuni.nio.server.Connection;
-import org.twuni.nio.server.EventHandler;
 import org.twuni.nio.server.Transporter;
 import org.twuni.nio.server.auth.AuthenticationException;
 import org.twuni.nio.server.auth.Authenticator;
 import org.twuni.xmppt.server.XMPPConnection.State;
 import org.twuni.xmppt.xml.XMLElement;
-import org.twuni.xmppt.xml.XMLElementParser;
 import org.twuni.xmppt.xmpp.PacketTransformer;
 import org.twuni.xmppt.xmpp.bind.Bind;
 import org.twuni.xmppt.xmpp.capabilities.CapabilitiesHash;
@@ -29,14 +26,24 @@ import org.twuni.xmppt.xmpp.sasl.SASLSuccess;
 import org.twuni.xmppt.xmpp.session.Session;
 import org.twuni.xmppt.xmpp.stream.Acknowledgment;
 import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
+import org.twuni.xmppt.xmpp.stream.Enable;
+import org.twuni.xmppt.xmpp.stream.Enabled;
 import org.twuni.xmppt.xmpp.stream.Stream;
 import org.twuni.xmppt.xmpp.stream.StreamError;
 import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
-public class XMPPEventHandler extends EventHandler {
+public class XMPPEventHandler extends XMLEventHandler {
 
 	private static Logger defaultLogger() {
 		return new Logger( XMPPEventHandler.class.getName() );
+	}
+
+	private static PacketTransformer defaultTransformer() {
+		return XMPPPacketConfiguration.getDefault();
+	}
+
+	private static Transporter defaultTransporter() {
+		return new Transporter();
 	}
 
 	private static boolean isAuthenticated( Connection connection ) {
@@ -48,21 +55,45 @@ public class XMPPEventHandler extends EventHandler {
 	}
 
 	private final Logger log;
-
-	private static final XMLElementParser XML = new XMLElementParser();
-	private final Transporter transporter = new Transporter();
-
+	private final Transporter transporter;
 	private final Authenticator authenticator;
-
 	private final String serviceName;
+	private final PacketTransformer transformer;
 
 	public XMPPEventHandler( String serviceName, Authenticator authenticator ) {
-		this( serviceName, authenticator, defaultLogger() );
+		this( serviceName, authenticator, defaultTransporter(), defaultTransformer(), defaultLogger() );
 	}
 
 	public XMPPEventHandler( String serviceName, Authenticator authenticator, Logger logger ) {
+		this( serviceName, authenticator, defaultTransporter(), defaultTransformer(), logger );
+	}
+
+	public XMPPEventHandler( String serviceName, Authenticator authenticator, PacketTransformer transformer ) {
+		this( serviceName, authenticator, defaultTransporter(), transformer, defaultLogger() );
+	}
+
+	public XMPPEventHandler( String serviceName, Authenticator authenticator, PacketTransformer transformer, Logger logger ) {
+		this( serviceName, authenticator, defaultTransporter(), transformer, logger );
+	}
+
+	public XMPPEventHandler( String serviceName, Authenticator authenticator, Transporter transporter ) {
+		this( serviceName, authenticator, transporter, defaultTransformer(), defaultLogger() );
+	}
+
+	public XMPPEventHandler( String serviceName, Authenticator authenticator, Transporter transporter, Logger logger ) {
+		this( serviceName, authenticator, transporter, defaultTransformer(), logger );
+	}
+
+	public XMPPEventHandler( String serviceName, Authenticator authenticator, Transporter transporter, PacketTransformer transformer ) {
+		this( serviceName, authenticator, transporter, transformer, defaultLogger() );
+	}
+
+	public XMPPEventHandler( String serviceName, Authenticator authenticator, Transporter transporter, PacketTransformer transformer, Logger logger ) {
+		super( logger );
 		this.serviceName = serviceName;
 		this.authenticator = authenticator;
+		this.transporter = transporter;
+		this.transformer = transformer;
 		log = logger;
 	}
 
@@ -74,13 +105,13 @@ public class XMPPEventHandler extends EventHandler {
 		return state( connection ).jidWithResource( serviceName );
 	}
 
-	private void onAcknowledgment( Connection connection, Acknowledgment acknowledgment ) {
+	public void onAcknowledgment( Connection connection, Acknowledgment acknowledgment ) {
 		if( acknowledgment.getH() != state( connection ).sent ) {
 			send( connection, new org.twuni.xmppt.xmpp.core.Error( StreamManagement.NAMESPACE ) );
 		}
 	}
 
-	private void onAcknowledgmentRequest( Connection connection ) {
+	public void onAcknowledgmentRequest( Connection connection ) {
 		send( connection, new Acknowledgment( state( connection ).received ) );
 	}
 
@@ -90,17 +121,9 @@ public class XMPPEventHandler extends EventHandler {
 			if( resource != null ) {
 				state( connection ).resource = resource;
 				transporter.available( connection, jid( connection ) );
+				state( connection ).available = true;
 			}
 			send( connection, IQ.result( iq.id(), Bind.jid( jidWithResource( connection ) ) ) );
-		}
-	}
-
-	@Override
-	public void onData( Connection connection, byte [] data ) {
-		log.info( "RECV C/%s [%d bytes] %s", Integer.toHexString( connection.hashCode() ), Integer.valueOf( data.length ), new String( data, 0, data.length ) );
-		List<XMLElement> xml = XML.parse( data );
-		for( XMLElement element : xml ) {
-			onXMLElement( connection, element );
 		}
 	}
 
@@ -108,9 +131,20 @@ public class XMPPEventHandler extends EventHandler {
 	public void onDisconnected( Connection connection ) {
 		super.onDisconnected( connection );
 		transporter.unavailable( jid( connection ) );
+		State s = state( connection );
+		s.available = false;
 	}
 
-	private void onIQ( Connection connection, IQ iq ) {
+	public void onEnable( Connection connection, Enable enable ) {
+		State s = state( connection );
+		s.sent = 0;
+		s.received = 0;
+		s.streamManagementID = connection.id();
+		s.streamManagementEnabled = true;
+		send( connection, new Enabled( connection.id(), serviceName, Math.min( 60, enable.getMaximumResumptionTime() ), enable.supportsSessionResumption() ) );
+	}
+
+	public void onIQ( Connection connection, IQ iq ) {
 
 		Object [] contents = iq.getContent();
 
@@ -126,12 +160,17 @@ public class XMPPEventHandler extends EventHandler {
 
 	}
 
-	private void onMessage( Connection connection, Message message ) {
-		state( connection ).received++;
+	public void onMessage( Connection connection, Message message ) {
 		transporter.transport( message.from( jid( connection ) ), message.to() );
 	}
 
 	public void onPacket( Connection connection, Object packet ) {
+		State s = state( connection );
+		if( s.isStreamManagementEnabled() ) {
+			if( !StreamManagement.is( packet ) ) {
+				s.received++;
+			}
+		}
 		if( packet instanceof Stream ) {
 			onStream( connection, (Stream) packet );
 		} else if( packet instanceof SASLAuthentication ) {
@@ -146,23 +185,25 @@ public class XMPPEventHandler extends EventHandler {
 			onAcknowledgmentRequest( connection );
 		} else if( packet instanceof Acknowledgment ) {
 			onAcknowledgment( connection, (Acknowledgment) packet );
+		} else if( packet instanceof Enable ) {
+			onEnable( connection, (Enable) packet );
 		}
 	}
 
-	private void onPing( Connection connection, IQ iq ) {
+	public void onPing( Connection connection, IQ iq ) {
 		if( iq.expectsResult() ) {
 			send( connection, IQ.result( iq.id(), jid( connection ), jidWithResource( connection ), (Object []) null ) );
 		}
 	}
 
-	private void onPresence( Connection connection, Presence presence ) {
+	public void onPresence( Connection connection, Presence presence ) {
 		if( presence.type() == null ) {
 			String jid = jid( connection );
 			send( connection, new Presence( presence.id(), jid, jid ) );
 		}
 	}
 
-	private void onSASLAuthentication( Connection connection, SASLAuthentication auth ) {
+	public void onSASLAuthentication( Connection connection, SASLAuthentication auth ) {
 		if( auth instanceof SASLPlainAuthentication ) {
 			SASLPlainAuthentication plain = (SASLPlainAuthentication) auth;
 			try {
@@ -175,25 +216,28 @@ public class XMPPEventHandler extends EventHandler {
 		}
 	}
 
-	private void onSession( Connection connection, IQ iq, Session session ) {
-		state( connection ).sent = 0;
-		state( connection ).received = 0;
+	public void onSession( Connection connection, IQ iq, Session session ) {
 		if( iq.expectsResult() ) {
 			send( connection, IQ.result( iq.id(), session ) );
+			state( connection ).sessionID = iq.id();
 		}
 	}
 
-	private void onStream( Connection connection, Stream stream ) {
+	public void onStream( Connection connection, Stream stream ) {
 		if( !serviceName.equals( stream.to() ) ) {
-			send( connection, new StreamError() );
+			send( connection, new StreamError( new XMLElement( "host-unknown" ) ) );
 			return;
 		}
+		State s = state( connection );
+		s.serviceName = serviceName;
 		if( !isAuthenticated( connection ) ) {
-			send( connection, new Stream( null, serviceName, Integer.toHexString( connection.hashCode() ), "stream", "1.0" ) );
+			s.streamID = connection.id();
+			send( connection, new Stream( null, serviceName, s.streamID, "stream", "1.0" ) );
 			send( connection, new Features( "stream", new SASLMechanisms( "PLAIN" ), new CapabilitiesHash( "http://example.com/test", CapabilitiesHash.HASH_SHA1, "InwBitZINWvBDup88dDxf1C9HlY" ) ) );
 		} else {
-			send( connection, new Stream( null, serviceName, Integer.toHexString( connection.hashCode() - 1 ), "stream", "1.0" ) );
-			send( connection, new Features( "stream", new Bind(), new Session(), new CapabilitiesHash( "http://example.com/test", CapabilitiesHash.HASH_SHA1, "InwBitZINWvBDup88dDxf1C9HlY" ) ) );
+			s.streamID = Integer.toHexString( connection.hashCode() - 1 );
+			send( connection, new Stream( null, serviceName, s.streamID, "stream", "1.0" ) );
+			send( connection, new Features( "stream", new StreamManagement(), new Bind(), new Session(), new CapabilitiesHash( "http://example.com/test", CapabilitiesHash.HASH_SHA1, "InwBitZINWvBDup88dDxf1C9HlY" ) ) );
 		}
 	}
 
@@ -206,9 +250,9 @@ public class XMPPEventHandler extends EventHandler {
 		}
 	}
 
+	@Override
 	public void onXMLElement( Connection connection, XMLElement element ) {
-		PacketTransformer xmpp = XMPPPacketConfiguration.getDefault();
-		Object packet = Stream.is( element ) ? Stream.from( element ) : xmpp.transform( element );
+		Object packet = transformer.transform( element );
 		if( packet != null ) {
 			onPacket( connection, packet );
 		}
@@ -219,7 +263,7 @@ public class XMPPEventHandler extends EventHandler {
 		try {
 			connection.write( b, 0, b.length );
 		} catch( BufferOverflowException exception ) {
-			log.info( "DELAY C/%s %s", Integer.toHexString( connection.hashCode() ), new String( b, 0, b.length ) );
+			log.info( "DELAY C/%s %s", connection.id(), new String( b, 0, b.length ) );
 		}
 	}
 

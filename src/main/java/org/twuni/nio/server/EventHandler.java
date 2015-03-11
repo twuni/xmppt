@@ -24,15 +24,15 @@ public class EventHandler {
 	}
 
 	public void onConnected( Connection connection ) {
-		log.info( "CONNECT C/%s", Integer.toHexString( connection.hashCode() ) );
+		log.info( "CONNECT C/%s", connection.id() );
 	}
 
 	protected void onData( Connection connection, byte [] data ) {
-		log.info( "DATA C/%s %s", Integer.toHexString( connection.hashCode() ), Base64.encodeBase64URLSafeString( data ) );
+		log.info( "DATA C/%s %s", connection.id(), Base64.encodeBase64URLSafeString( data ) );
 	}
 
 	public void onDisconnected( Connection connection ) {
-		log.info( "DISCONNECT C/%s", Integer.toHexString( connection.hashCode() ) );
+		log.info( "DISCONNECT C/%s", connection.id() );
 		connection.cleanup();
 	}
 

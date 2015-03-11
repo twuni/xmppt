@@ -169,6 +169,18 @@ public class XMPPClientTestFixture extends Assert {
 
 	}
 
+	protected StreamError connectWithError( String host, int port, boolean secure, String serviceName ) throws IOException {
+
+		prepareConnect();
+
+		xmpp = new XMPPSocket( host, port, secure );
+
+		send( new Stream( serviceName ) );
+
+		return nextPacket();
+
+	}
+
 	protected void disconnect() throws IOException {
 
 		if( isAuthenticated() ) {

@@ -9,28 +9,54 @@ public class XMLElement extends XMLEntity {
 
 	public static final String ATTRIBUTE_NAMESPACE = "xmlns";
 
+	public final String prefix;
 	public final String name;
 	public final Map<String, String> attributes;
 	public final Collection<XMLEntity> children;
 
 	public XMLElement( String name ) {
-		this( name, null );
+		this( null, name );
 	}
 
 	public XMLElement( String name, Map<String, String> attributes ) {
-		this( name, attributes, null );
+		this( (String) null, name, attributes );
 	}
 
 	public XMLElement( String name, Map<String, String> attributes, Collection<XMLEntity> children ) {
-		this( null, name, attributes, children );
+		this( (String) null, name, attributes, children );
+	}
+
+	public XMLElement( String prefix, String name ) {
+		this( prefix, name, null );
+	}
+
+	public XMLElement( String prefix, String name, Map<String, String> attributes ) {
+		this( prefix, name, attributes, null );
+	}
+
+	public XMLElement( String prefix, String name, Map<String, String> attributes, Collection<XMLEntity> children ) {
+		this( null, prefix, name, attributes, children );
 	}
 
 	public XMLElement( XMLElement parent, String name, Map<String, String> attributes ) {
-		this( parent, name, attributes, null );
+		this( parent, null, name, attributes );
 	}
 
 	public XMLElement( XMLElement parent, String name, Map<String, String> attributes, Collection<XMLEntity> children ) {
+		this( parent, null, name, attributes, children );
+	}
+
+	public XMLElement( XMLElement parent, String prefix, String name ) {
+		this( parent, prefix, name, null );
+	}
+
+	public XMLElement( XMLElement parent, String prefix, String name, Map<String, String> attributes ) {
+		this( parent, prefix, name, attributes, null );
+	}
+
+	public XMLElement( XMLElement parent, String prefix, String name, Map<String, String> attributes, Collection<XMLEntity> children ) {
 		super( parent );
+		this.prefix = prefix;
 		this.name = name;
 		this.attributes = attributes != null ? attributes : new HashMap<String, String>();
 		this.children = children != null ? children : new ArrayList<XMLEntity>();
@@ -38,6 +64,10 @@ public class XMLElement extends XMLEntity {
 
 	public String attribute( String attributeName ) {
 		return attributes.get( attributeName );
+	}
+
+	public boolean belongsTo( String namespace ) {
+		return namespace != null && namespace.equals( getNamespace() );
 	}
 
 	public String content() {
@@ -52,13 +82,9 @@ public class XMLElement extends XMLEntity {
 		return attribute( ATTRIBUTE_NAMESPACE );
 	}
 
-	public boolean belongsTo( String namespace ) {
-		return namespace != null && namespace.equals( getNamespace() );
-	}
-
 	@Override
 	public String toString() {
-		XMLBuilder xml = new XMLBuilder( name );
+		XMLBuilder xml = new XMLBuilder( prefix, name );
 		for( String attribute : attributes.keySet() ) {
 			xml.attribute( attribute, attributes.get( attribute ) );
 		}

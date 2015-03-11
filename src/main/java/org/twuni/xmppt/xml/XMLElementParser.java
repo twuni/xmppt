@@ -26,6 +26,9 @@ public class XMLElementParser {
 
 	public List<XMLElement> parse( byte [] in, int offset, int length ) {
 
+		// FIXME: Implement streaming for this -- it only works if the given
+		// buffer+offset+length contains the entire XML message.
+
 		List<XMLElement> root = new ArrayList<XMLElement>();
 		Stack<XMLElement> tree = new Stack<XMLElement>();
 		State state = State.START_DOCUMENT;
@@ -84,7 +87,7 @@ public class XMLElementParser {
 					XMLElement parent = tree.isEmpty() ? null : tree.peek();
 
 					if( starting ) {
-						XMLElement prototype = new XMLElement( parent, name, null );
+						XMLElement prototype = new XMLElement( parent, prefix, name );
 						if( prefix != null && namespaces.containsKey( prefix ) ) {
 							prototype.attributes.put( XMLElement.ATTRIBUTE_NAMESPACE, namespaces.get( prefix ) );
 						}
@@ -153,9 +156,9 @@ public class XMLElementParser {
 						if( !XMLElement.ATTRIBUTE_NAMESPACE.equals( attributeName ) ) {
 							x.attributes.put( attributeName, attributeValue );
 						} else {
-							if( prefix == null ) {
-								x.attributes.put( attributeName, attributeValue );
-							}
+							// if( prefix == null ) {
+							x.attributes.put( attributeName, attributeValue );
+							// }
 						}
 
 						int attributePrefixIndex = attributeName.indexOf( ':' );
