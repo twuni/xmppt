@@ -5,10 +5,6 @@ import org.twuni.xmppt.xml.XMLElement;
 
 public class Enable {
 
-	public static final String ELEMENT_NAME = "enable";
-	public static final String ATTRIBUTE_MAX = "max";
-	public static final String ATTRIBUTE_RESUME = "resume";
-
 	public static Enable from( XMLElement element ) {
 		String maxString = element.attribute( ATTRIBUTE_MAX );
 		String resumeString = element.attribute( ATTRIBUTE_RESUME );
@@ -20,6 +16,10 @@ public class Enable {
 	public static boolean is( XMLElement element ) {
 		return ELEMENT_NAME.equals( element.name ) && element.belongsTo( StreamManagement.NAMESPACE );
 	}
+
+	public static final String ELEMENT_NAME = "enable";
+	public static final String ATTRIBUTE_MAX = "max";
+	public static final String ATTRIBUTE_RESUME = "resume";
 
 	private final boolean supportsSessionResumption;
 	private final int maximumResumptionTime;
@@ -49,7 +49,7 @@ public class Enable {
 		xml.attribute( XMLElement.ATTRIBUTE_NAMESPACE, StreamManagement.NAMESPACE );
 
 		if( maximumResumptionTime > 0 ) {
-			xml.attribute( ATTRIBUTE_MAX, maximumResumptionTime );
+			xml.attribute( ATTRIBUTE_MAX, Integer.valueOf( maximumResumptionTime ) );
 		}
 
 		if( supportsSessionResumption ) {

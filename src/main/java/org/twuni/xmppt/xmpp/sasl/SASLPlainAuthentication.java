@@ -8,8 +8,6 @@ import org.twuni.xmppt.xml.XMLElement;
 
 public class SASLPlainAuthentication extends SASLAuthentication {
 
-	public static final String MECHANISM = "PLAIN";
-
 	public static SASLPlainAuthentication from( XMLElement element ) {
 		return new SASLPlainAuthentication( element.children.iterator().next().toString() );
 	}
@@ -17,6 +15,8 @@ public class SASLPlainAuthentication extends SASLAuthentication {
 	public static boolean is( XMLElement element ) {
 		return SASLAuthentication.is( element ) && MECHANISM.equals( element.attributes.get( ATTRIBUTE_MECHANISM ) );
 	}
+
+	public static final String MECHANISM = "PLAIN";
 
 	private final String authz;
 	private final String authc;
@@ -36,9 +36,8 @@ public class SASLPlainAuthentication extends SASLAuthentication {
 				if( a > 0 ) {
 					b = i;
 					break;
-				} else {
-					a = i;
 				}
+				a = i;
 			}
 		}
 		a++;

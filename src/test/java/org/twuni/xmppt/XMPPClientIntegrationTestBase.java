@@ -40,7 +40,7 @@ public abstract class XMPPClientIntegrationTestBase extends XMPPClientTestFixtur
 		// assertFeatureAvailable( Ping.class );
 
 		send( new IQ( generatePacketID(), IQ.TYPE_SET, null, getStream().from(), new Ping() ) );
-		IQ iq = nextPacket( IQ.class );// Ignore the response.
+		nextPacket( IQ.class );// Ignore the response.
 
 		assertPacketsSentWereReceived();
 

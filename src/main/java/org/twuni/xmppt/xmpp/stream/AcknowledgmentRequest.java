@@ -5,15 +5,17 @@ import org.twuni.xmppt.xml.XMLElement;
 
 public class AcknowledgmentRequest {
 
-	public static final String ELEMENT_NAME = "r";
+	public static AcknowledgmentRequest from( XMLElement element ) {
+		return element != null ? INSTANCE : null;
+	}
 
 	public static boolean is( XMLElement element ) {
 		return StreamManagement.is( element ) && ELEMENT_NAME.equals( element.name );
 	}
 
-	public static AcknowledgmentRequest from( XMLElement element ) {
-		return new AcknowledgmentRequest();
-	}
+	public static final String ELEMENT_NAME = "r";
+
+	private static final AcknowledgmentRequest INSTANCE = new AcknowledgmentRequest();
 
 	@Override
 	public String toString() {

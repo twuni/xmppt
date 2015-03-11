@@ -35,25 +35,35 @@ import org.twuni.xmppt.xmpp.stream.StreamManagement;
 
 public class XMPPEventHandler extends EventHandler {
 
-	private static final Logger LOG = new Logger( XMPPEventHandler.class.getName() );
-	private static final XMLElementParser XML = new XMLElementParser();
+	private static Logger defaultLogger() {
+		return new Logger( XMPPEventHandler.class.getName() );
+	}
+
+	private static boolean isAuthenticated( Connection connection ) {
+		return state( connection ).username != null;
+	}
 
 	private static State state( Connection connection ) {
 		return (State) connection.state();
 	}
 
+	private final Logger log;
+
+	private static final XMLElementParser XML = new XMLElementParser();
 	private final Transporter transporter = new Transporter();
+
 	private final Authenticator authenticator;
 
 	private final String serviceName;
 
 	public XMPPEventHandler( String serviceName, Authenticator authenticator ) {
-		this.serviceName = serviceName;
-		this.authenticator = authenticator;
+		this( serviceName, authenticator, defaultLogger() );
 	}
 
-	private boolean isAuthenticated( Connection connection ) {
-		return state( connection ).username != null;
+	public XMPPEventHandler( String serviceName, Authenticator authenticator, Logger logger ) {
+		this.serviceName = serviceName;
+		this.authenticator = authenticator;
+		log = logger;
 	}
 
 	private String jid( Connection connection ) {
@@ -70,7 +80,7 @@ public class XMPPEventHandler extends EventHandler {
 		}
 	}
 
-	private void onAcknowledgmentRequest( Connection connection, AcknowledgmentRequest request ) {
+	private void onAcknowledgmentRequest( Connection connection ) {
 		send( connection, new Acknowledgment( state( connection ).received ) );
 	}
 
@@ -87,7 +97,7 @@ public class XMPPEventHandler extends EventHandler {
 
 	@Override
 	public void onData( Connection connection, byte [] data ) {
-		LOG.info( "RECV C/%s [%d bytes] %s", Integer.toHexString( connection.hashCode() ), Integer.valueOf( data.length ), new String( data, 0, data.length ) );
+		log.info( "RECV C/%s [%d bytes] %s", Integer.toHexString( connection.hashCode() ), Integer.valueOf( data.length ), new String( data, 0, data.length ) );
 		List<XMLElement> xml = XML.parse( data );
 		for( XMLElement element : xml ) {
 			onXMLElement( connection, element );
@@ -110,7 +120,7 @@ public class XMPPEventHandler extends EventHandler {
 			} else if( content instanceof Session ) {
 				onSession( connection, iq, (Session) content );
 			} else if( content instanceof Ping ) {
-				onPing( connection, iq, (Ping) content );
+				onPing( connection, iq );
 			}
 		}
 
@@ -133,15 +143,15 @@ public class XMPPEventHandler extends EventHandler {
 		} else if( packet instanceof Message ) {
 			onMessage( connection, (Message) packet );
 		} else if( packet instanceof AcknowledgmentRequest ) {
-			onAcknowledgmentRequest( connection, (AcknowledgmentRequest) packet );
+			onAcknowledgmentRequest( connection );
 		} else if( packet instanceof Acknowledgment ) {
 			onAcknowledgment( connection, (Acknowledgment) packet );
 		}
 	}
 
-	private void onPing( Connection connection, IQ iq, Ping ping ) {
+	private void onPing( Connection connection, IQ iq ) {
 		if( iq.expectsResult() ) {
-			send( connection, IQ.result( iq.id(), jid( connection ), jidWithResource( connection ), null ) );
+			send( connection, IQ.result( iq.id(), jid( connection ), jidWithResource( connection ), (Object []) null ) );
 		}
 	}
 
@@ -169,7 +179,7 @@ public class XMPPEventHandler extends EventHandler {
 		state( connection ).sent = 0;
 		state( connection ).received = 0;
 		if( iq.expectsResult() ) {
-			send( connection, IQ.result( iq.id(), new Session() ) );
+			send( connection, IQ.result( iq.id(), session ) );
 		}
 	}
 
@@ -209,7 +219,7 @@ public class XMPPEventHandler extends EventHandler {
 		try {
 			connection.write( b, 0, b.length );
 		} catch( BufferOverflowException exception ) {
-			LOG.info( "DELAY C/%s %s", Integer.toHexString( connection.hashCode() ), new String( b, 0, b.length ) );
+			log.info( "DELAY C/%s %s", Integer.toHexString( connection.hashCode() ), new String( b, 0, b.length ) );
 		}
 	}
 

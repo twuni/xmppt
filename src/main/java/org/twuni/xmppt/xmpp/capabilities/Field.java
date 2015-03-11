@@ -8,6 +8,10 @@ public class Field {
 
 	private static class ChildTransformer extends PacketTransformer {
 
+		public ChildTransformer() {
+			// Default constructor.
+		}
+
 		@Override
 		public boolean matches( XMLElement element ) {
 			return true;
@@ -26,19 +30,21 @@ public class Field {
 
 	}
 
-	public static final String ELEMENT_NAME = "field";
-	public static final String ATTRIBUTE_NAME = "var";
-	public static final String ATTRIBUTE_TYPE = "type";
-	public static final String TYPE_HIDDEN = "hidden";
-	private static final PacketTransformer CHILD_TRANSFORMER = new ChildTransformer();
+	public static Field from( XMLElement element ) {
+		return new Field( element.attribute( ATTRIBUTE_NAME ), element.attribute( ATTRIBUTE_TYPE ), CHILD_TRANSFORMER.transform( element.children ) );
+	}
 
 	public static boolean is( XMLElement element ) {
 		return ELEMENT_NAME.equals( element.name );
 	}
 
-	public static Field from( XMLElement element ) {
-		return new Field( element.attribute( ATTRIBUTE_NAME ), element.attribute( ATTRIBUTE_TYPE ), CHILD_TRANSFORMER.transform( element.children ) );
-	}
+	public static final String ELEMENT_NAME = "field";
+	public static final String ATTRIBUTE_NAME = "var";
+	public static final String ATTRIBUTE_TYPE = "type";
+
+	public static final String TYPE_HIDDEN = "hidden";
+
+	private static final PacketTransformer CHILD_TRANSFORMER = new ChildTransformer();
 
 	private final String name;
 	private final String type;
@@ -50,16 +56,16 @@ public class Field {
 		this.content = content;
 	}
 
+	public Object [] getContent() {
+		return content;
+	}
+
 	public String getName() {
 		return name;
 	}
 
 	public String getType() {
 		return type;
-	}
-
-	public Object [] getContent() {
-		return content;
 	}
 
 	@Override

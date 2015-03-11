@@ -8,6 +8,10 @@ public class Fields {
 
 	private static class ChildTransformer extends PacketTransformer {
 
+		public ChildTransformer() {
+			// Default constructor.
+		}
+
 		@Override
 		public boolean matches( XMLElement element ) {
 			return true;
@@ -26,19 +30,21 @@ public class Fields {
 
 	}
 
-	public static final String NAMESPACE = "jabber:x:data";
-	public static final String ELEMENT_NAME = "x";
-	public static final String ATTRIBUTE_TYPE = "type";
-	public static final String TYPE_RESULT = "result";
-	private static final PacketTransformer CHILD_TRANSFORMER = new ChildTransformer();
+	public static Fields from( XMLElement element ) {
+		return new Fields( element.attribute( ATTRIBUTE_TYPE ), CHILD_TRANSFORMER.transform( element.children ) );
+	}
 
 	public static boolean is( XMLElement element ) {
 		return element.belongsTo( NAMESPACE ) && ELEMENT_NAME.equals( element.name );
 	}
 
-	public static Fields from( XMLElement element ) {
-		return new Fields( element.attribute( ATTRIBUTE_TYPE ), CHILD_TRANSFORMER.transform( element.children ) );
-	}
+	public static final String NAMESPACE = "jabber:x:data";
+	public static final String ELEMENT_NAME = "x";
+	public static final String ATTRIBUTE_TYPE = "type";
+
+	public static final String TYPE_RESULT = "result";
+
+	private static final PacketTransformer CHILD_TRANSFORMER = new ChildTransformer();
 
 	private final String type;
 	private final Object [] content;
@@ -48,12 +54,12 @@ public class Fields {
 		this.content = content;
 	}
 
-	public String getType() {
-		return type;
-	}
-
 	public Object [] getContent() {
 		return content;
+	}
+
+	public String getType() {
+		return type;
 	}
 
 	@Override

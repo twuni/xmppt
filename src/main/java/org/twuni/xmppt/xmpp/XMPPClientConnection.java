@@ -161,15 +161,15 @@ public class XMPPClientConnection {
 			return this;
 		}
 
-		public Builder state( byte [] state ) throws IOException {
+		public Builder state( byte [] state ) {
 			return state != null ? state( state, 0, state.length ) : state( (InputStream) null );
 		}
 
-		public Builder state( byte [] state, int offset, int length ) throws IOException {
+		public Builder state( byte [] state, int offset, int length ) {
 			return state( state != null ? new ByteArrayInputStream( state, offset, length ) : null );
 		}
 
-		public Builder state( InputStream state ) throws IOException {
+		public Builder state( InputStream state ) {
 			this.state = state;
 			return this;
 		}
@@ -191,8 +191,6 @@ public class XMPPClientConnection {
 
 	public static class Context {
 
-		private static final int VERSION = 1;
-
 		private static String readUTF( DataInputStream in ) throws IOException {
 			int length = in.readInt();
 			return length > 0 ? in.readUTF() : null;
@@ -212,6 +210,8 @@ public class XMPPClientConnection {
 				d.writeUTF( in );
 			}
 		}
+
+		private static final int VERSION = 1;
 
 		public Stream stream;
 		public Features features;
@@ -263,6 +263,10 @@ public class XMPPClientConnection {
 					streamManagementID = readUTF( d );
 					resourceName = readUTF( d );
 					fullJID = readUTF( d );
+
+					break;
+
+				default:
 
 					break;
 

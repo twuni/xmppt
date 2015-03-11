@@ -9,6 +9,9 @@ import java.util.Iterator;
 
 import org.twuni.Logger;
 
+/**
+ * A dispatcher dispatches events to {@link Connection}s.
+ */
 public class Dispatcher implements Runnable, Closeable {
 
 	private static final Logger LOG = new Logger( Dispatcher.class.getName() );
@@ -18,9 +21,23 @@ public class Dispatcher implements Runnable, Closeable {
 	private final EventHandler eventHandler;
 	private boolean running;
 
+	/**
+	 * @param selector
+	 * @param eventHandler
+	 */
 	public Dispatcher( Selector selector, EventHandler eventHandler ) {
 		this.selector = selector;
 		this.eventHandler = eventHandler;
+	}
+
+	@Override
+	public void close() throws IOException {
+		LOG.info( "#%s", "close" );
+		running = false;
+	}
+
+	protected void onException( Throwable exception ) {
+		LOG.info( "#%s(%s) %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
 	}
 
 	public void register( Connection connection ) throws ClosedChannelException {
@@ -30,10 +47,6 @@ public class Dispatcher implements Runnable, Closeable {
 			connection.getClient().register( selector, SelectionKey.OP_READ, connection );
 		}
 		eventHandler.onConnected( connection );
-	}
-
-	protected void onException( Throwable exception ) {
-		LOG.info( "#%s(%s) %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
 	}
 
 	public void requestWrite( Connection connection ) {
@@ -89,12 +102,6 @@ public class Dispatcher implements Runnable, Closeable {
 
 		}
 
-	}
-
-	@Override
-	public void close() throws IOException {
-		LOG.info( "#%s", "close" );
-		running = false;
 	}
 
 }

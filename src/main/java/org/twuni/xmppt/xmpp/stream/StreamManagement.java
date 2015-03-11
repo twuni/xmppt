@@ -67,15 +67,8 @@ public class StreamManagement implements Extension {
 
 	}
 
-	public static final String NAMESPACE = "urn:xmpp:sm:3";
-	public static final String ELEMENT_NAME = "sm";
-
-	private static final PacketTransformer FEATURE = new Feature();
-	private static final PacketTransformer PACKET = new Packet();
-	private static final StreamManagement INSTANCE = new StreamManagement();
-
 	public static StreamManagement from( XMLElement element ) {
-		return INSTANCE;
+		return element != null ? INSTANCE : null;
 	}
 
 	public static boolean is( Object packet ) {
@@ -85,6 +78,13 @@ public class StreamManagement implements Extension {
 	public static boolean is( XMLElement element ) {
 		return element.belongsTo( NAMESPACE );
 	}
+
+	public static final String NAMESPACE = "urn:xmpp:sm:3";
+	public static final String ELEMENT_NAME = "sm";
+
+	private static final PacketTransformer FEATURE = new Feature();
+	private static final PacketTransformer PACKET = new Packet();
+	private static final StreamManagement INSTANCE = new StreamManagement();
 
 	@Override
 	public PacketTransformer feature() {

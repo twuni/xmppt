@@ -5,12 +5,6 @@ import org.twuni.xmppt.xml.XMLElement;
 
 public class Enabled {
 
-	public static final String ELEMENT_NAME = "enabled";
-	public static final String ATTRIBUTE_ID = "id";
-	public static final String ATTRIBUTE_RESUME = "resume";
-	public static final String ATTRIBUTE_MAX = "max";
-	public static final String ATTRIBUTE_LOCATION = "location";
-
 	public static Enabled from( XMLElement element ) {
 
 		String id = element.attribute( ATTRIBUTE_ID );
@@ -28,6 +22,14 @@ public class Enabled {
 	public static boolean is( XMLElement element ) {
 		return ELEMENT_NAME.equals( element.name ) && element.belongsTo( StreamManagement.NAMESPACE );
 	}
+
+	public static final String ELEMENT_NAME = "enabled";
+	public static final String ATTRIBUTE_ID = "id";
+	public static final String ATTRIBUTE_RESUME = "resume";
+
+	public static final String ATTRIBUTE_MAX = "max";
+
+	public static final String ATTRIBUTE_LOCATION = "location";
 
 	private final String id;
 	private final boolean supportsSessionResumption;
@@ -71,7 +73,7 @@ public class Enabled {
 		xml.attribute( ATTRIBUTE_LOCATION, location );
 
 		if( maximumResumptionTime > 0 ) {
-			xml.attribute( ATTRIBUTE_MAX, maximumResumptionTime );
+			xml.attribute( ATTRIBUTE_MAX, Integer.valueOf( maximumResumptionTime ) );
 		}
 
 		if( supportsSessionResumption ) {

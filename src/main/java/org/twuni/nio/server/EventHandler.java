@@ -5,10 +5,40 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 import org.twuni.Logger;
+import org.twuni.xmppt.util.Base64;
 
 public class EventHandler {
 
-	private static final Logger LOG = new Logger( EventHandler.class.getName() );
+	private static Logger defaultLogger() {
+		return new Logger( EventHandler.class.getName() );
+	}
+
+	private final Logger log;
+
+	public EventHandler() {
+		this( defaultLogger() );
+	}
+
+	public EventHandler( Logger logger ) {
+		log = logger;
+	}
+
+	public void onConnected( Connection connection ) {
+		log.info( "CONNECT C/%s", Integer.toHexString( connection.hashCode() ) );
+	}
+
+	protected void onData( Connection connection, byte [] data ) {
+		log.info( "DATA C/%s %s", Integer.toHexString( connection.hashCode() ), Base64.encodeBase64URLSafeString( data ) );
+	}
+
+	public void onDisconnected( Connection connection ) {
+		log.info( "DISCONNECT C/%s", Integer.toHexString( connection.hashCode() ) );
+		connection.cleanup();
+	}
+
+	public void onException( Throwable exception ) {
+		log.info( "ERROR [%s] %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
+	}
 
 	public void onReadRequested( Connection connection ) {
 
@@ -33,29 +63,12 @@ public class EventHandler {
 
 	}
 
-	protected void onData( Connection connection, byte [] data ) {
-		// By default, do nothing.
-	}
-
 	public void onWriteRequested( Connection connection ) {
 		try {
 			connection.flush();
 		} catch( IOException exception ) {
 			onException( exception );
 		}
-	}
-
-	public void onConnected( Connection connection ) {
-		LOG.info( "CONNECT C/%s", Integer.toHexString( connection.hashCode() ) );
-	}
-
-	public void onDisconnected( Connection connection ) {
-		LOG.info( "DISCONNECT C/%s", Integer.toHexString( connection.hashCode() ) );
-		connection.cleanup();
-	}
-
-	public void onException( Throwable exception ) {
-		LOG.info( "ERROR [%s] %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
 	}
 
 }

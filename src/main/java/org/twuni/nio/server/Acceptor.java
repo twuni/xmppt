@@ -15,13 +15,28 @@ import org.twuni.Logger;
 
 public class Acceptor implements Runnable, Closeable {
 
-	private static final Logger LOG = new Logger( Acceptor.class.getName() );
+	private static Logger defaultLogger() {
+		return new Logger( Acceptor.class.getName() );
+	}
 
 	private final ServerSocketChannel channel;
 	private final DispatcherProvider dispatcherProvider;
 	private final EventHandler eventHandler;
 	private final ConnectionFactory connectionFactory;
+	private final Logger log;
 	private boolean running;
+
+	public Acceptor( InetAddress address, int port, DispatcherProvider dispatcherProvider, EventHandler eventHandler, ConnectionFactory connectionFactory ) throws IOException {
+		this( new InetSocketAddress( address, port ), dispatcherProvider, eventHandler, connectionFactory );
+	}
+
+	public Acceptor( InetAddress address, int port, Selector selector, EventHandler eventHandler, ConnectionFactory connectionFactory, int dispatcherCount ) throws IOException {
+		this( address, port, new DispatcherPool( dispatcherCount, selector, eventHandler ), eventHandler, connectionFactory );
+	}
+
+	public Acceptor( int port, DispatcherProvider dispatcherProvider, EventHandler eventHandler, ConnectionFactory connectionFactory ) throws IOException {
+		this( new InetSocketAddress( port ), dispatcherProvider, eventHandler, connectionFactory );
+	}
 
 	public Acceptor( int port, EventHandler eventHandler, ConnectionFactory connectionFactory ) throws IOException {
 		this( port, SelectorProvider.provider().openSelector(), eventHandler, connectionFactory, DispatcherPool.DEFAULT_SIZE );
@@ -35,29 +50,22 @@ public class Acceptor implements Runnable, Closeable {
 		this( port, new DispatcherPool( dispatcherCount, selector, eventHandler ), eventHandler, connectionFactory );
 	}
 
-	public Acceptor( InetAddress address, int port, Selector selector, EventHandler eventHandler, ConnectionFactory connectionFactory, int dispatcherCount ) throws IOException {
-		this( address, port, new DispatcherPool( dispatcherCount, selector, eventHandler ), eventHandler, connectionFactory );
-	}
-
-	public Acceptor( InetAddress address, int port, DispatcherProvider dispatcherProvider, EventHandler eventHandler, ConnectionFactory connectionFactory ) throws IOException {
-		this( new InetSocketAddress( address, port ), dispatcherProvider, eventHandler, connectionFactory );
-	}
-
-	public Acceptor( int port, DispatcherProvider dispatcherProvider, EventHandler eventHandler, ConnectionFactory connectionFactory ) throws IOException {
-		this( new InetSocketAddress( port ), dispatcherProvider, eventHandler, connectionFactory );
-	}
-
-	public Acceptor( SocketAddress localServerEndpoint, Selector selector, EventHandler eventHandler, ConnectionFactory connectionFactory, int dispatcherCount ) throws IOException {
-		this( localServerEndpoint, new DispatcherPool( dispatcherCount, selector, eventHandler ), eventHandler, connectionFactory );
-	}
-
 	public Acceptor( SocketAddress localServerEndpoint, DispatcherProvider dispatcherProvider, EventHandler eventHandler, ConnectionFactory connectionFactory ) throws IOException {
+		this( localServerEndpoint, dispatcherProvider, eventHandler, connectionFactory, defaultLogger() );
+	}
+
+	public Acceptor( SocketAddress localServerEndpoint, DispatcherProvider dispatcherProvider, EventHandler eventHandler, ConnectionFactory connectionFactory, Logger logger ) throws IOException {
 		channel = ServerSocketChannel.open();
 		channel.configureBlocking( true );
 		channel.socket().bind( localServerEndpoint );
 		this.dispatcherProvider = dispatcherProvider;
 		this.connectionFactory = connectionFactory;
 		this.eventHandler = eventHandler;
+		log = logger;
+	}
+
+	public Acceptor( SocketAddress localServerEndpoint, Selector selector, EventHandler eventHandler, ConnectionFactory connectionFactory, int dispatcherCount ) throws IOException {
+		this( localServerEndpoint, new DispatcherPool( dispatcherCount, selector, eventHandler ), eventHandler, connectionFactory );
 	}
 
 	@Override
@@ -66,27 +74,27 @@ public class Acceptor implements Runnable, Closeable {
 		channel.close();
 	}
 
+	protected void onException( Throwable exception ) {
+		log.info( "#%s(%s) %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
+	}
+
 	@Override
 	public void run() {
 		running = true;
 		while( running && channel.isOpen() ) {
 			try {
 				SocketChannel client = channel.accept();
-				LOG.info( "#%s %s", "run", "Client connected." );
+				log.info( "#%s %s", "run", "Client connected." );
 				client.configureBlocking( false );
 				Dispatcher dispatcher = dispatcherProvider.provideDispatcher();
 				dispatcher.register( connectionFactory.createConnection( client, dispatcher, eventHandler ) );
 			} catch( ClosedChannelException exception ) {
-				LOG.info( "Stopped." );
+				log.info( "Stopped." );
 				break;
 			} catch( IOException exception ) {
 				onException( exception );
 			}
 		}
-	}
-
-	protected void onException( Throwable exception ) {
-		LOG.info( "#%s(%s) %s", "onException", exception.getClass().getSimpleName(), exception.getLocalizedMessage() );
 	}
 
 }

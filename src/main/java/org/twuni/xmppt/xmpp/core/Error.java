@@ -5,11 +5,6 @@ import org.twuni.xmppt.xml.XMLElement;
 
 public class Error {
 
-	public static final String ELEMENT_NAME = "error";
-	public static final String ATTRIBUTE_CODE = "code";
-	public static final String ATTRIBUTE_TYPE = "type";
-	public static final String TYPE_CANCEL = "cancel";
-
 	public static Error from( XMLElement element ) {
 		String type = element.attribute( ATTRIBUTE_TYPE );
 		String codeString = element.attribute( ATTRIBUTE_CODE );
@@ -20,6 +15,13 @@ public class Error {
 	public static boolean is( XMLElement element ) {
 		return ELEMENT_NAME.equals( element.name );
 	}
+
+	public static final String ELEMENT_NAME = "error";
+	public static final String ATTRIBUTE_CODE = "code";
+
+	public static final String ATTRIBUTE_TYPE = "type";
+
+	public static final String TYPE_CANCEL = "cancel";
 
 	public final String namespace;
 	public final String prefix;
@@ -53,7 +55,7 @@ public class Error {
 		xml.attribute( XMLElement.ATTRIBUTE_NAMESPACE, namespace );
 		xml.attribute( ATTRIBUTE_TYPE, type );
 		if( code != 0 ) {
-			xml.attribute( ATTRIBUTE_CODE, code );
+			xml.attribute( ATTRIBUTE_CODE, Integer.valueOf( code ) );
 		}
 		return xml.content( content );
 	}

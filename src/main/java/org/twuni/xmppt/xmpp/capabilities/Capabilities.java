@@ -8,6 +8,10 @@ public class Capabilities {
 
 	private static class ChildTransformer extends PacketTransformer {
 
+		public ChildTransformer() {
+			// Default constructor.
+		}
+
 		@Override
 		public boolean matches( XMLElement element ) {
 			return true;
@@ -34,37 +38,39 @@ public class Capabilities {
 
 	}
 
-	public static final String ELEMENT_NAME = "query";
-	public static final String NAMESPACE = "http://jabber.org/protocol/disco#info";
-	public static final String ATTRIBUTE_NODE = "node";
-	private static final PacketTransformer CHILD_TRANSFORMER = new ChildTransformer();
+	public static Capabilities from( XMLElement element ) {
+		return new Capabilities( element.attribute( ATTRIBUTE_NODE ), CHILD_TRANSFORMER.transform( element.children ) );
+	}
 
 	public static boolean is( XMLElement element ) {
 		return element.belongsTo( NAMESPACE ) && ELEMENT_NAME.equals( element.name );
 	}
 
-	public static Capabilities from( XMLElement element ) {
-		return new Capabilities( element.attribute( ATTRIBUTE_NODE ), CHILD_TRANSFORMER.transform( element.children ) );
-	}
+	public static final String ELEMENT_NAME = "query";
+	public static final String NAMESPACE = "http://jabber.org/protocol/disco#info";
+
+	public static final String ATTRIBUTE_NODE = "node";
+
+	private static final PacketTransformer CHILD_TRANSFORMER = new ChildTransformer();
 
 	private final String node;
 	private final Object [] content;
-
-	public Capabilities( String node, String hash, Object... content ) {
-		this( String.format( "%s#%s", node, hash ), content );
-	}
 
 	public Capabilities( String node, Object... content ) {
 		this.node = node;
 		this.content = content;
 	}
 
-	public String getNode() {
-		return node;
+	public Capabilities( String node, String hash, Object... content ) {
+		this( String.format( "%s#%s", node, hash ), content );
 	}
 
 	public Object [] getContent() {
 		return content;
+	}
+
+	public String getNode() {
+		return node;
 	}
 
 	@Override

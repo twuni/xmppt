@@ -140,6 +140,9 @@ public class XMPPSocket implements Closeable, Flushable, Writable {
 					head = new Node( packet );
 					tail = head;
 				} else {
+					if( tail == null ) {
+						tail = head;
+					}
 					tail.next = new Node( packet );
 					tail = tail.next;
 				}

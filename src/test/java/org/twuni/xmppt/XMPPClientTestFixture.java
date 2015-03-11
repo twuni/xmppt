@@ -376,7 +376,7 @@ public class XMPPClientTestFixture extends Assert {
 		return ok( xmpp.nextPacket( type, until ) );
 	}
 
-	private <T> T ok( T packet ) {
+	protected <T> T ok( T packet ) {
 		Context context = getContext();
 		if( context != null ) {
 			if( context.streamManagementEnabled ) {

@@ -5,10 +5,6 @@ import org.twuni.xmppt.xml.XMLElement;
 
 public class Resumed {
 
-	public static final String ELEMENT_NAME = "resumed";
-	public static final String ATTRIBUTE_H = "h";
-	public static final String ATTRIBUTE_PREVIOUS_ID = "previd";
-
 	public static Resumed from( XMLElement element ) {
 		String previousID = element.attribute( ATTRIBUTE_PREVIOUS_ID );
 		String hString = element.attribute( ATTRIBUTE_H );
@@ -19,6 +15,12 @@ public class Resumed {
 	public static boolean is( XMLElement element ) {
 		return StreamManagement.is( element ) && ELEMENT_NAME.equals( element.name );
 	}
+
+	public static final String ELEMENT_NAME = "resumed";
+
+	public static final String ATTRIBUTE_H = "h";
+
+	public static final String ATTRIBUTE_PREVIOUS_ID = "previd";
 
 	private final String previousID;
 	private final int h;
@@ -42,7 +44,7 @@ public class Resumed {
 		XMLBuilder xml = new XMLBuilder( ELEMENT_NAME );
 
 		xml.attribute( XMLElement.ATTRIBUTE_NAMESPACE, StreamManagement.NAMESPACE );
-		xml.attribute( ATTRIBUTE_H, h );
+		xml.attribute( ATTRIBUTE_H, Integer.valueOf( h ) );
 		xml.attribute( ATTRIBUTE_PREVIOUS_ID, previousID );
 
 		return xml.close();

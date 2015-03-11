@@ -11,7 +11,7 @@ import org.junit.Test;
 
 public class XMLElementParserTest extends Assert {
 
-	private XMLElement parse( String in ) {
+	private static XMLElement parse( String in ) {
 		return new XMLElementParser().parse( in ).get( 0 );
 	}
 

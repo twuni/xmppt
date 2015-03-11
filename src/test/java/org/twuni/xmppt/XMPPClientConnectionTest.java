@@ -19,17 +19,7 @@ import org.twuni.xmppt.xmpp.stream.AcknowledgmentRequest;
 
 public class XMPPClientConnectionTest {
 
-	private static void send( XMPPClientConnectionManager connectionManager, String from, String to, String messageBody ) throws IOException {
-		connectionManager.getConnection( from ).send( new Message( UUID.randomUUID().toString(), Message.TYPE_CHAT, from, to, new XMLBuilder( "body" ).content( messageBody ) ) );
-	}
-
-	private XMPPTestServer server;
-
-	private XMPPClientConnection.Builder alice() {
-		return local( "localhost", "alice", "p8ssw0rd." );
-	}
-
-	private XMPPClientConnection.Builder any( String serviceName, final String username, String password ) {
+	private static XMPPClientConnection.Builder any( String serviceName, final String username, String password ) {
 
 		XMPPClientConnection.Builder x = new XMPPClientConnection.Builder();
 
@@ -72,6 +62,16 @@ public class XMPPClientConnectionTest {
 
 		return x.userName( username ).password( password );
 
+	}
+
+	private static void send( XMPPClientConnectionManager connectionManager, String from, String to, String messageBody ) throws IOException {
+		connectionManager.getConnection( from ).send( new Message( UUID.randomUUID().toString(), Message.TYPE_CHAT, from, to, new XMLBuilder( "body" ).content( messageBody ) ) );
+	}
+
+	private XMPPTestServer server;
+
+	private XMPPClientConnection.Builder alice() {
+		return local( "localhost", "alice", "p8ssw0rd." );
 	}
 
 	private XMPPClientConnection.Builder bob() {
